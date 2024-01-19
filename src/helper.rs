@@ -32,8 +32,6 @@ pub struct UpgradeHelper {
 
 impl UpgradeHelper {
     /// Creates a new instance of the upgrade helper.
-    ///
-    /// TODO: check errors instead of using expect everywhere
     pub async fn new(
         network: Network,
         previous_version: &str,

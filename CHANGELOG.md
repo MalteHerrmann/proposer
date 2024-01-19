@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+### Features
+
 - [#1](https://github.com/evmos/proposer/pull/1) Prepare CLI command to submit proposal.
 
 ## Legacy Changelog from [Original Repo](https://github.com/MalteHerrmann/upgrade-helper)
