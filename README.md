@@ -7,7 +7,7 @@ This repository contains a helper to aid in generating the contents of Software 
 - [x] Calculating the block height for the desired time of upgrade
 - [x] Updating the description template
 - [ ] Creating a Commonwealth thread
-- [ ] Creating the CLI command to submit the proposal
+- [x] Creating the CLI command to submit the proposal
 - [ ] Creating a Notion page that contains the proposal text as well as the CLI command
 
 ## Installation
