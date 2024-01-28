@@ -76,9 +76,9 @@ mod tests {
     use super::*;
     use chrono::Utc;
 
-    #[tokio::test]
-    async fn test_prepare_proposal_pass() {
-        let helper = UpgradeHelper::new(Network::Mainnet, "v0.0.1", "v0.1.0", Utc::now()).await;
+    #[test]
+    fn test_prepare_proposal_pass() {
+        let helper = UpgradeHelper::new(Network::Mainnet, "v0.0.1", "v0.1.0", Utc::now(), 60);
 
         let result = prepare_proposal(&helper);
         assert!(

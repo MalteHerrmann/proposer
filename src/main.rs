@@ -11,6 +11,7 @@ mod version;
 use chrono::Utc;
 use helper::UpgradeHelper;
 use std::process;
+use crate::block::get_estimated_height;
 
 /// Creates a new instance of the upgrade helper based on querying the user for the necessary input.
 async fn get_helper_from_inputs() -> Result<UpgradeHelper, String> {
@@ -38,14 +39,16 @@ async fn get_helper_from_inputs() -> Result<UpgradeHelper, String> {
     let voting_period = helper::get_voting_period(used_network);
     let upgrade_time = inputs::get_upgrade_date(voting_period, Utc::now())?;
 
+    let upgrade_height = get_estimated_height(used_network, upgrade_time).await;
+
     // Create an instance of the helper
     Ok(UpgradeHelper::new(
         used_network,
         previous_version.as_str(),
         target_version.as_str(),
         upgrade_time,
-    )
-    .await)
+        upgrade_height,
+    ))
 }
 
 /// Runs the logic to prepare the proposal description and write

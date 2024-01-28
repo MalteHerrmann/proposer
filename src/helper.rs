@@ -1,4 +1,4 @@
-use crate::{block::get_estimated_height, inputs, network::Network, version};
+use crate::{inputs, network::Network, version};
 use chrono::{DateTime, Duration, Utc};
 use std::path::{Path, PathBuf};
 use std::{fs, io};
@@ -32,11 +32,12 @@ pub struct UpgradeHelper {
 
 impl UpgradeHelper {
     /// Creates a new instance of the upgrade helper.
-    pub async fn new(
+    pub fn new(
         network: Network,
         previous_version: &str,
         target_version: &str,
         upgrade_time: DateTime<Utc>,
+        upgrade_height: u64,
     ) -> UpgradeHelper {
         let chain_id = get_chain_id(network);
         // TODO: Get from input eventually
@@ -44,8 +45,6 @@ impl UpgradeHelper {
 
         let proposal_name = format!("Evmos {} {} Upgrade", network, target_version);
         let voting_period = get_voting_period(network);
-        // TODO: Move out to input and pass values into function, helper should be instantiated with all values
-        let upgrade_height = get_estimated_height(network, upgrade_time).await;
         let proposal_file_name = format!("proposal-{}-{}.md", network, target_version);
         let config_file_name = format!("proposal-{}-{}.json", network, target_version);
 
@@ -143,14 +142,14 @@ mod helper_tests {
     use super::*;
     use chrono::TimeZone;
 
-    #[tokio::test]
-    async fn test_new_upgrade_helper() {
+    #[test]
+    fn test_new_upgrade_helper() {
         let network = Network::Testnet;
         let previous_version = "v14.0.0";
         let target_version = "v14.0.0-rc1";
         let upgrade_time = Utc.with_ymd_and_hms(2021, 1, 1, 0, 0, 0).unwrap();
         let helper =
-            UpgradeHelper::new(network, previous_version, target_version, upgrade_time).await;
+            UpgradeHelper::new(network, previous_version, target_version, upgrade_time, 60);
         assert_eq!(helper.chain_id, "evmos_9000-4");
         assert_eq!(helper.config_file_name, "proposal-Testnet-v14.0.0-rc1.json");
         assert!(
@@ -164,15 +163,16 @@ mod helper_tests {
         assert_eq!(helper.target_version, "v14.0.0-rc1");
     }
 
-    #[tokio::test]
-    async fn test_write_to_json_and_read_from_json() {
+    #[test]
+    fn test_write_to_json_and_read_from_json() {
+        let upgrade_height = 60;
         let helper = UpgradeHelper::new(
             Network::Testnet,
             "v14.0.0",
             "v14.0.0-rc1",
             Utc.with_ymd_and_hms(2021, 1, 1, 0, 0, 0).unwrap(),
-        )
-        .await;
+            upgrade_height,
+        );
 
         assert!(
             helper.write_to_json().is_ok(),
@@ -186,6 +186,7 @@ mod helper_tests {
         let read_input_helper = from_json(path).expect("failed to read helper from JSON file");
         assert_eq!(helper.chain_id, read_input_helper.chain_id);
         assert_eq!(helper.config_file_name, read_input_helper.config_file_name);
+        assert_eq!(helper.upgrade_height, read_input_helper.upgrade_height);
 
         // remove the config file
         match fs::remove_file(&path) {

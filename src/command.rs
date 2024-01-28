@@ -98,7 +98,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_prepare_command() {
-        let helper = UpgradeHelper::new(Network::Testnet, "v13.0.0", "v14.0.0", Utc::now()).await;
+        let helper = UpgradeHelper::new(Network::Testnet, "v13.0.0", "v14.0.0", Utc::now(), 60);
 
         // Write description to file
         let description = "This is a test proposal.";
