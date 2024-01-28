@@ -43,7 +43,7 @@ pub async fn prepare_command(helper: &UpgradeHelper) -> Result<String, String> {
     let data = json!({
         "assets": assets,
         "chain_id": helper.chain_id,
-        "description": description,
+        "description": description.replace("\n", "\\n"),  // NOTE: this is necessary to not print the actual new lines when rendering the template.
         "fees": fees,
         "height": helper.upgrade_height,
         "home": helper.home,
