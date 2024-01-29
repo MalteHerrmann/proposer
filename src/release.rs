@@ -1,16 +1,11 @@
 use crate::http::get;
-use octocrab::{
-    models::repos::{Asset, Release},
-    Result,
-};
+use octocrab::{models::repos::{Asset, Release}, Octocrab, Result};
 use serde_json::Value;
 use std::collections::HashMap;
 
 /// Sends a HTTP request to the GitHub release page and returns the response.
-pub async fn get_release(version: &str) -> Result<Release> {
-    let octocrab = octocrab::instance();
-
-    octocrab
+pub async fn get_release(octocrab_instance: &Octocrab, version: &str) -> Result<Release> {
+    octocrab_instance
         .repos("evmos", "evmos")
         .releases()
         .get_by_tag(version)
@@ -19,10 +14,90 @@ pub async fn get_release(version: &str) -> Result<Release> {
 
 /// Checks if the release for the target version already exists by
 /// sending a HTTP request to the GitHub release page.
-pub async fn check_release_exists(version: &str) -> bool {
-    match get_release(version).await {
+pub async fn check_release_exists(octocrab_instance: &Octocrab, version: &str) -> bool {
+    match get_release(&octocrab_instance, version).await {
         Ok(_) => true,
         _ => false,
+    }
+}
+
+#[cfg(test)]
+mod release_tests {
+    use super::*;
+    use crate::mock_error::setup_error_handler;
+    use serde::{Deserialize, Serialize};
+    use wiremock::{
+        matchers::{method, path},
+        Mock, MockServer, ResponseTemplate,
+    };
+
+    #[derive(Serialize, Deserialize)]
+    struct FakeRelease(Release);
+
+    /// Sets up a mock server to return the given response template
+    /// when receiving a GET request on the release URL.
+    /// Returns the mock server.
+    ///
+    /// This is used to mock the GitHub API without having to actually run queries to it.
+    async fn setup_api(template: ResponseTemplate) -> MockServer {
+        const release_url: &str = "/repos/evmos/evmos/releases/tags/v14.0.0";
+
+        // Create a mock server
+        let mock_server = MockServer::start().await;
+
+        // Set up the mock server to return the fake response when receiving
+        // a GET request on the release URL
+        Mock::given(method("GET"))
+            .and(path(release_url))
+            .respond_with(template)
+            .mount(&mock_server)
+            .await;
+
+        // Set up the error handling for failed get requests
+        setup_error_handler(
+            &mock_server,
+            &format!("GET on {} not received", release_url),
+        )
+        .await;
+
+        // Return the mock server
+        mock_server
+    }
+
+    /// Sets up an Octocrab instance with the mock server URI.
+    fn setup_octocrab(uri: &str) -> Octocrab {
+        Octocrab::builder().base_uri(uri).unwrap().build().unwrap()
+    }
+
+    #[tokio::test]
+    async fn test_get_release_pass() {
+        let release_response: Release =
+            serde_json::from_str(include_str!("resources/release.json")).unwrap();
+
+        let page_response = FakeRelease(release_response);
+
+        let template = ResponseTemplate::new(200).set_body_json(&page_response);
+        let mock_server = setup_api(template).await;
+
+        let client = setup_octocrab(&mock_server.uri());
+        let release = get_release(&client, "v14.0.0").await.unwrap();
+        assert_eq!(release.tag_name, "v14.0.0");
+    }
+
+    #[tokio::test]
+    async fn test_get_release_fail() {
+        let res = get_release("invalidj.xjaf/ie").await;
+        assert_eq!(res.is_err(), true);
+    }
+
+    #[tokio::test]
+    async fn test_check_release_exists_pass() {
+        assert_eq!(check_release_exists("v14.0.0").await, true);
+    }
+
+    #[tokio::test]
+    async fn test_check_release_exists_fail() {
+        assert_eq!(check_release_exists("v14.0.8").await, false);
     }
 }
 
@@ -148,31 +223,9 @@ async fn get_checksum_map(assets: Vec<Asset>) -> Option<HashMap<String, String>>
 }
 
 #[cfg(test)]
-mod tests {
+mod assets_tests {
     use super::*;
     use serde_json::json;
-
-    #[tokio::test]
-    async fn test_get_release_pass() {
-        let release = get_release("v14.0.0").await.unwrap();
-        assert_eq!(release.tag_name, "v14.0.0");
-    }
-
-    #[tokio::test]
-    async fn test_get_release_fail() {
-        let res = get_release("invalidj.xjaf/ie").await;
-        assert_eq!(res.is_err(), true);
-    }
-
-    #[tokio::test]
-    async fn test_check_release_exists_pass() {
-        assert_eq!(check_release_exists("v14.0.0").await, true);
-    }
-
-    #[tokio::test]
-    async fn test_check_release_exists_fail() {
-        assert_eq!(check_release_exists("v14.0.8").await, false);
-    }
 
     #[tokio::test]
     async fn test_get_checksum_map_pass() {

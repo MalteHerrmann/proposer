@@ -1,7 +1,7 @@
 use crate::helper::UpgradeHelper;
 use crate::network::Network;
 use crate::release::{get_asset_string, get_release};
-use handlebars::{Handlebars, no_escape};
+use handlebars::{no_escape, Handlebars};
 use serde_json::json;
 use std::io;
 
@@ -152,10 +152,7 @@ mod tests {
     #[test]
     fn test_get_description_from_md() {
         let description = get_description_from_md("src/templates/command.hbs");
-        assert!(
-            description.is_ok(),
-            "description should be ok, but is not"
-        );
+        assert!(description.is_ok(), "description should be ok, but is not");
     }
 
     #[test]
