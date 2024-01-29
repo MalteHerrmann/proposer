@@ -1,3 +1,4 @@
+use crate::block::get_estimated_height;
 use crate::{inputs, network::Network, version};
 use chrono::{DateTime, Duration, Utc};
 use std::path::{Path, PathBuf};
@@ -67,7 +68,7 @@ impl UpgradeHelper {
     pub fn validate(&self) -> Result<(), String> {
         // Check if the target version is valid
         let valid_version =
-            version::is_valid_target_version(self.network, self.target_version.as_str());
+            version::is_valid_version_for_network(self.network, self.target_version.as_str());
         if !valid_version {
             return Err(format!(
                 "Invalid target version for {}: {}",
@@ -135,6 +136,55 @@ pub fn from_json(path: &Path) -> Result<UpgradeHelper, String> {
             e
         )),
     }
+}
+
+/// Returns the upgrade helper from the command line arguments.
+pub fn get_helper_from_json(path: &Path) -> Result<UpgradeHelper, String> {
+    // Read the helper configuration
+    let upgrade_helper = from_json(path)?;
+
+    // Validate the helper configuration
+    upgrade_helper.validate()?;
+
+    Ok(upgrade_helper)
+}
+
+/// Creates a new instance of the upgrade helper based on querying the user for the necessary input.
+pub async fn get_helper_from_inputs() -> Result<UpgradeHelper, String> {
+    // Query and check the network to use
+    let used_network = inputs::get_used_network()?;
+
+    // Query and check the version to upgrade from
+    let previous_version = inputs::get_text("Previous version to upgrade from:");
+    let valid_version = version::is_valid_version(previous_version.as_str());
+    if !valid_version {
+        return Err(format!("Invalid previous version: {}", previous_version));
+    }
+
+    // Query and check the target version to upgrade to
+    let target_version = inputs::get_text("Target version to upgrade to:");
+    let valid_version =
+        version::is_valid_version_for_network(used_network, target_version.as_str());
+    if !valid_version {
+        return Err(format!(
+            "Invalid target version for {}: {}",
+            used_network, target_version
+        ));
+    }
+
+    // Query and check the upgrade time and height
+    let voting_period = get_voting_period(used_network);
+    let upgrade_time = inputs::get_upgrade_date(voting_period, Utc::now())?;
+    let upgrade_height = get_estimated_height(used_network, upgrade_time).await;
+
+    // Create an instance of the helper
+    Ok(UpgradeHelper::new(
+        used_network,
+        previous_version.as_str(),
+        target_version.as_str(),
+        upgrade_time,
+        upgrade_height,
+    ))
 }
 
 #[cfg(test)]

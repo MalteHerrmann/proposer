@@ -1,14 +1,37 @@
 use crate::helper::UpgradeHelper;
 use crate::network::Network;
 use crate::release::{get_asset_string, get_release};
-use handlebars::{Handlebars, no_escape};
+use crate::{release, utils};
+use handlebars::{no_escape, Handlebars};
 use serde_json::json;
 use std::io;
 
+/// Runs the logic to prepare the command to submit the proposal.
+pub async fn run_command_preparation(helper: &UpgradeHelper) -> Result<(), Box<dyn std::error::Error>> {
+    // Check if release was already created
+    let release_exists = release::check_release_exists(helper.target_version.as_str()).await;
+    if !release_exists {
+        // TODO: is this okay or is this an anti-pattern? Will be refactored soon anyways
+        return Err(Box::from(format!(
+            "Release {} does not exist yet.",
+            helper.target_version
+        )));
+    }
+
+    // Prepare command to submit proposal
+    let command = prepare_command(&helper).await?;
+
+    // Write command to file
+    utils::write_content_to_file(&command, &helper.proposal_file_name.replace(".md", ".sh"))?;
+
+    Ok(())
+}
+
 /// Prepares the command to submit the proposal using the Evmos CLI.
-pub async fn prepare_command(helper: &UpgradeHelper) -> Result<String, String> {
+async fn prepare_command(helper: &UpgradeHelper) -> Result<String, String> {
     let description = match get_description_from_md(&helper.proposal_file_name) {
         Ok(d) => d,
+        // TODO: refactor the error handling here
         Err(e) => {
             return Err(format!(
                 "Failed to read proposal file '{}': {}\n\n!!! ATTENTION !!!\nMake sure to generate the file using the corresponding CLI command first.\n",
@@ -152,10 +175,7 @@ mod tests {
     #[test]
     fn test_get_description_from_md() {
         let description = get_description_from_md("src/templates/command.hbs");
-        assert!(
-            description.is_ok(),
-            "description should be ok, but is not"
-        );
+        assert!(description.is_ok(), "description should be ok, but is not");
     }
 
     #[test]
