@@ -1,5 +1,8 @@
 use crate::http::get;
-use octocrab::{models::repos::{Asset, Release}, Octocrab, Result};
+use octocrab::{
+    models::repos::{Asset, Release},
+    Octocrab, Result,
+};
 use serde_json::Value;
 use std::collections::HashMap;
 
