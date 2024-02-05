@@ -9,6 +9,7 @@ mod proposal;
 mod release;
 mod utils;
 mod version;
+mod errors;
 
 // External imports
 use clap::Parser; // NOTE: needs to be imported for Cli::parse() to work

@@ -1,23 +1,24 @@
 use crate::network::Network;
+use crate::errors::InputError;
 use chrono::{
     DateTime, Datelike, Duration, NaiveDateTime, NaiveTime, TimeZone, Timelike, Utc, Weekday,
 };
 use inquire::{DateSelect, Select};
 use std::path::PathBuf;
-use std::{fs, ops::Add, process};
+use std::{fs, ops::Add};
 
 const MONTHS: [&str; 13] = [
-    "", "January", "February", "March", "April", "May", "June", "July", "August", "Septemer",
+    "", "January", "February", "March", "April", "May", "June", "July", "August", "September",
     "October", "November", "December",
 ];
 
 /// Scans the current folder for existing proposal configurations (stored as JSON)
 /// and lets the user choose the desired configuration file to use.
-pub fn choose_config() -> Result<PathBuf, String> {
-    let current_dir = std::env::current_dir().unwrap();
+pub fn choose_config() -> Result<PathBuf, InputError> {
+    let current_dir = std::env::current_dir()?;
 
     // Get all files in the current directory
-    let paths = fs::read_dir(&current_dir).unwrap();
+    let paths = fs::read_dir(&current_dir)?;
 
     // Filter for JSON files
     let json_files = paths.filter(|path| {
@@ -30,93 +31,67 @@ pub fn choose_config() -> Result<PathBuf, String> {
     });
 
     // Collect the file names
-    let mut config_files: Vec<String> = Vec::new();
-    for file in json_files {
-        let file_name = file.unwrap().path().to_str().unwrap().to_string();
-        config_files.push(file_name);
-    }
+    let config_files: Vec<String> = json_files
+        .map(|file| {
+            file.unwrap()
+                .path()
+                .to_string_lossy()
+                .to_string()
+        })
+        .collect();
 
     if config_files.is_empty() {
-        return Err("No configuration files found in current directory".to_string());
+        return Err(InputError::NoConfigFiles(current_dir));
     }
 
     // Prompt the user to select the configuration file
-    let config_file_name = match Select::new("Select configuration file", config_files).prompt() {
-        Ok(choice) => choice,
-        Err(e) => {
-            return Err(format!("Error selecting configuration file: {}", e));
-        }
-    };
+    let config_file_name = Select::new(
+        "Select configuration file", config_files,
+    ).prompt()?;
 
     Ok(current_dir.join(config_file_name))
 }
 
 /// Prompts the user to select the network type used.
-pub fn get_used_network() -> Result<Network, String> {
-    let used_network: Network;
-
+pub fn get_used_network() -> Result<Network, InputError> {
     let network_options = vec!["Local Node", "Testnet", "Mainnet"];
+    let chosen_network = Select::new("Select network", network_options).prompt()?;
 
-    // Prompt the user to select the network
-    let chosen_network = Select::new("Select network", network_options).prompt();
-
-    match chosen_network {
-        Ok(choice) => match choice {
-            "Local Node" => used_network = Network::LocalNode,
-            "Testnet" => used_network = Network::Testnet,
-            "Mainnet" => used_network = Network::Mainnet,
-            &_ => {
-                return Err(format!("Invalid network selected: {:?}", choice));
-            }
-        },
-        Err(e) => {
-            return Err(format!("Error selecting network: {}", e.to_string()));
+    let used_network = match chosen_network {
+        "Local Node" => Network::LocalNode,
+        "Testnet" => Network::Testnet,
+        "Mainnet" => Network::Mainnet,
+        &_ => {
+            return Err(InputError::InvalidNetwork(chosen_network.to_string()));
         }
-    }
-
+    };
     Ok(used_network)
 }
 
 /// Prompts the user to input the target version to upgrade to.
-pub fn get_text(prompt: &str) -> String {
-    let target_version: String;
-    // Prompt the user to input the desired target version
-    let result = inquire::Text::new(prompt).prompt();
-    match result {
-        Ok(version) => {
-            target_version = version;
-        }
-        Err(e) => {
-            println!("Error selecting target version: {}", e);
-            process::exit(1);
-        }
-    }
-
-    target_version
+pub fn get_text(prompt: &str) -> Result<String, InputError> {
+    Ok(inquire::Text::new(prompt).prompt()?)
 }
 
 /// Prompts the user to input the date for the planned upgrade.
 /// The date is calculated based on the current time and the voting period duration.
-pub fn get_upgrade_date(
+pub fn get_upgrade_time(
     voting_period: Duration,
     utc_time: DateTime<Utc>,
-) -> Result<DateTime<Utc>, String> {
+) -> Result<DateTime<Utc>, InputError> {
     let default_date = calculate_planned_date(voting_period, utc_time);
 
     // Prompt the user to input the desired upgrade date
-    let result = DateSelect::new("Select date for the planned upgrade")
+    let date = DateSelect::new("Select date for the planned upgrade")
         .with_min_date(utc_time.date_naive())
         .with_default(default_date.date_naive())
         .with_week_start(Weekday::Mon)
-        .prompt();
-    match result {
-        Ok(date) => {
-            let time = NaiveTime::from_hms_opt(16, 0, 0).unwrap();
-            let planned_naive_date_time = NaiveDateTime::new(date, time);
-            Ok(Utc.from_local_datetime(&planned_naive_date_time).unwrap())
-        }
-        Err(e) => Err(format!("Error selecting planned date: {}", e.to_string())),
-    }
+        .prompt()?;
+
+    let time = NaiveTime::from_hms_opt(16, 0, 0).unwrap();
+    let upgrade_time = NaiveDateTime::new(date, time);
+
+    Ok(Utc.from_local_datetime(&upgrade_time).unwrap())
 }
 
 /// Calculates the date for the planned upgrade given the current time and the voting period duration.

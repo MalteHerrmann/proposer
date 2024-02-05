@@ -93,6 +93,8 @@ pub async fn generate_proposal() {
         proposal::render_proposal(&upgrade_helper).expect("failed to prepare proposal");
 
     // Write the proposal description to file
-    utils::write_content_to_file(&description, &upgrade_helper.proposal_file_name)
-        .expect("failed to write proposal to file");
+    if let Err(_) = utils::write_content_to_file(&description, &upgrade_helper.proposal_file_name) {
+        println!("failed to write proposal to file: {}", &upgrade_helper.proposal_file_name);
+        process::exit(1);
+    }
 }
