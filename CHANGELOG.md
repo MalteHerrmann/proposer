@@ -4,10 +4,11 @@
 
 ### Features
 
-- [#1](https://github.com/evmos/proposer/pull/1) Prepare CLI command to submit proposal.
+- (cli) [#1](https://github.com/evmos/proposer/pull/1) Prepare CLI command to submit proposal.
 
 ### Improvements
 
+- (all) [#13](https://github.com/evmos/proposer/pull/13) Implement better error handling using [thiserror](https://github.com/dtolnay/thiserror).
 - (cli) [#12](https://github.com/evmos/proposer/pull/12) Use [clap](https://github.com/clap-rs/clap) for CLI handling.
 
 ## Legacy Changelog from [Original Repo](https://github.com/MalteHerrmann/upgrade-helper)
