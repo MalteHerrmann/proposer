@@ -1,11 +1,11 @@
 use crate::{
     command,
+    errors::{CommandError, ProposalError},
     helper::{get_helper_from_inputs, get_helper_from_json},
     inputs, proposal, utils,
 };
 use clap::{Args, Parser, Subcommand};
 use std::path::PathBuf;
-use std::process;
 
 /// Utility to help with preparing software upgrades for the Evmos Core Team.
 #[derive(Debug, Parser)]
@@ -37,7 +37,7 @@ pub struct GenerateCommandArgs {
 }
 
 /// Runs the logic for the `generate-command` sub-command.
-pub async fn generate_command(args: GenerateCommandArgs) -> Result<(), Box<dyn std::error::Error>> {
+pub async fn generate_command(args: GenerateCommandArgs) -> Result<(), CommandError> {
     let config = match args.config {
         Some(config_file_name) => config_file_name,
         None => inputs::choose_config()?, // NOTE: if no config file is provided, prompt the user to choose one
@@ -46,53 +46,29 @@ pub async fn generate_command(args: GenerateCommandArgs) -> Result<(), Box<dyn s
     let upgrade_helper = get_helper_from_json(&config)?;
 
     // Run the main functionality of the helper.
-    command::run_command_preparation(&upgrade_helper).await
+    Ok(command::run_command_preparation(&upgrade_helper).await?)
 }
 
 /// Runs the logic for the `generate-proposal` sub-command.
 ///
 /// This sub-command queries the user for the necessary information to prepare the proposal description
 /// for a standard Evmos software upgrade.
-pub async fn generate_proposal() {
+pub async fn generate_proposal() -> Result<(), ProposalError> {
     // Create an instance of the helper
-    let upgrade_helper = match get_helper_from_inputs().await {
-        Ok(helper) => helper,
-        Err(e) => {
-            println!("Error creating helper: {}", e);
-            process::exit(1);
-        }
-    };
+    let upgrade_helper = get_helper_from_inputs().await?;
 
     // Validate the helper configuration
-    match upgrade_helper.validate() {
-        Ok(_) => {}
-        Err(e) => {
-            println!("Invalid configuration: {}", e);
-            process::exit(1);
-        }
-    };
+    upgrade_helper.validate()?;
 
     // Export the configuration
-    match upgrade_helper.write_to_json() {
-        Ok(_) => {
-            println!(
-                "successfully wrote config to json: {}",
-                &upgrade_helper.config_file_name
-            )
-        }
-        Err(e) => {
-            println!(
-                "failed to write config to {}: {}",
-                &upgrade_helper.config_file_name, e
-            );
-        }
-    }
+    upgrade_helper.write_to_json()?;
 
     // Render the proposal description
-    let description =
-        proposal::render_proposal(&upgrade_helper).expect("failed to prepare proposal");
+    let description = proposal::render_proposal(&upgrade_helper)?;
 
     // Write the proposal description to file
-    utils::write_content_to_file(&description, &upgrade_helper.proposal_file_name)
-        .expect("failed to write proposal to file");
+    Ok(utils::write_content_to_file(
+        &description,
+        &upgrade_helper.proposal_file_name,
+    )?)
 }

@@ -1,10 +1,13 @@
-use crate::{block::N_BLOCKS, helper::UpgradeHelper, inputs::get_time_string, network::Network};
-use handlebars::{Handlebars, RenderError};
+use crate::{
+    block::N_BLOCKS, errors::ProposalError, helper::UpgradeHelper, inputs::get_time_string,
+    network::Network,
+};
+use handlebars::Handlebars;
 use num_format::ToFormattedString;
 use serde_json::json;
 
 /// Renders the proposal template, filling in the necessary information.
-pub fn render_proposal(helper: &UpgradeHelper) -> Result<String, RenderError> {
+pub fn render_proposal(helper: &UpgradeHelper) -> Result<String, ProposalError> {
     let mut handlebars = Handlebars::new();
     handlebars.set_strict_mode(true);
 
@@ -32,7 +35,7 @@ pub fn render_proposal(helper: &UpgradeHelper) -> Result<String, RenderError> {
         "voting_time": helper.voting_period,
     });
 
-    handlebars.render("proposal", &data)
+    Ok(handlebars.render("proposal", &data)?)
 }
 
 /// Returns the appropriate Markdown link to the block on Mintscan for the given network and height.

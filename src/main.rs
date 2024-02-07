@@ -1,6 +1,7 @@
 mod block;
 mod cli;
 mod command;
+mod errors;
 mod helper;
 mod http;
 mod inputs;
@@ -10,6 +11,7 @@ mod release;
 mod utils;
 mod version;
 
+use std::process;
 // External imports
 use clap::Parser; // NOTE: needs to be imported for Cli::parse() to work
 
@@ -20,12 +22,16 @@ use crate::cli::{SubCommand, CLI};
 async fn main() {
     match CLI::parse().subcmd {
         SubCommand::GenerateProposal => {
-            cli::generate_proposal().await;
+            if let Err(e) = cli::generate_proposal().await {
+                println!("Error generating proposal: {}", e);
+                process::exit(1);
+            };
         }
         SubCommand::GenerateCommand(args) => {
-            cli::generate_command(args)
-                .await
-                .expect("Error generating command");
+            if let Err(e) = cli::generate_command(args).await {
+                println!("Error generating command: {}", e);
+                process::exit(1);
+            }
         }
     }
 }

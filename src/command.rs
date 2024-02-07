@@ -1,3 +1,4 @@
+use crate::errors::PrepareError;
 use crate::helper::UpgradeHelper;
 use crate::network::Network;
 use crate::release::{get_asset_string, get_release};
@@ -7,16 +8,9 @@ use serde_json::json;
 use std::io;
 
 /// Runs the logic to prepare the command to submit the proposal.
-pub async fn run_command_preparation(helper: &UpgradeHelper) -> Result<(), Box<dyn std::error::Error>> {
+pub async fn run_command_preparation(helper: &UpgradeHelper) -> Result<(), PrepareError> {
     // Check if release was already created
-    let release_exists = release::check_release_exists(helper.target_version.as_str()).await;
-    if !release_exists {
-        // TODO: is this okay or is this an anti-pattern? Will be refactored soon anyways
-        return Err(Box::from(format!(
-            "Release {} does not exist yet.",
-            helper.target_version
-        )));
-    }
+    release::check_release_exists(helper.target_version.as_str()).await?;
 
     // Prepare command to submit proposal
     let command = prepare_command(&helper).await?;
@@ -28,35 +22,10 @@ pub async fn run_command_preparation(helper: &UpgradeHelper) -> Result<(), Box<d
 }
 
 /// Prepares the command to submit the proposal using the Evmos CLI.
-async fn prepare_command(helper: &UpgradeHelper) -> Result<String, String> {
-    let description = match get_description_from_md(&helper.proposal_file_name) {
-        Ok(d) => d,
-        // TODO: refactor the error handling here
-        Err(e) => {
-            return Err(format!(
-                "Failed to read proposal file '{}': {}\n\n!!! ATTENTION !!!\nMake sure to generate the file using the corresponding CLI command first.\n",
-                &helper.proposal_file_name, e
-            ));
-        }
-    };
-
-    let res = get_release(helper.target_version.as_str()).await;
-    let release = match res {
-        Ok(release) => release,
-        Err(e) => {
-            return Err(format!("Failed to get release from GitHub: {}", e));
-        }
-    };
-
-    let assets = match get_asset_string(&release).await {
-        Some(assets) => assets,
-        None => {
-            return Err(format!(
-                "Could not generate asset string for release {}",
-                helper.target_version,
-            ));
-        }
-    };
+async fn prepare_command(helper: &UpgradeHelper) -> Result<String, PrepareError> {
+    let description = get_description_from_md(&helper.proposal_file_name)?;
+    let release = get_release(helper.target_version.as_str()).await?;
+    let assets = get_asset_string(&release).await?;
 
     // TODO: get fees from network conditions?
     let fees = "10000000000aevmos";
@@ -84,10 +53,8 @@ async fn prepare_command(helper: &UpgradeHelper) -> Result<String, String> {
         .register_template_file("command", "src/templates/command.hbs")
         .expect("Failed to register template file");
 
-    match handlebars.render("command", &data) {
-        Ok(command) => Ok(command),
-        Err(e) => Err(format!("Failed to render command: {}", e)),
-    }
+    let command = handlebars.render("command", &data)?;
+    Ok(command)
 }
 
 /// Returns the description string from the given Markdown file.

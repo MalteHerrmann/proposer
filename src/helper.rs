@@ -1,4 +1,5 @@
 use crate::block::get_estimated_height;
+use crate::errors::{HelperError, InputError, ValidationError};
 use crate::{inputs, network::Network, version};
 use chrono::{DateTime, Duration, Utc};
 use std::path::{Path, PathBuf};
@@ -65,42 +66,31 @@ impl UpgradeHelper {
     }
 
     /// Validates the upgrade helper.
-    pub fn validate(&self) -> Result<(), String> {
+    pub fn validate(&self) -> Result<(), ValidationError> {
         // Check if the target version is valid
-        let valid_version =
-            version::is_valid_version_for_network(self.network, self.target_version.as_str());
-        if !valid_version {
-            return Err(format!(
-                "Invalid target version for {}: {}",
-                self.network, self.target_version
+        if !version::is_valid_version_for_network(self.network, self.target_version.as_str()) {
+            return Err(ValidationError::TargetVersion(
+                self.network,
+                self.target_version.clone(),
             ));
         }
 
         // Check if the previous version is valid
-        let valid_version = version::is_valid_version(self.previous_version.as_str());
-        if !valid_version {
-            return Err(format!(
-                "Invalid previous version: {}",
-                self.previous_version
+        if !version::is_valid_version(self.previous_version.as_str()) {
+            return Err(ValidationError::PreviousVersion(
+                self.previous_version.clone(),
             ));
         }
 
         // Check if the upgrade time is valid
         let valid_time = inputs::is_valid_upgrade_time(self.upgrade_time);
         if !valid_time {
-            return Err(format!("Invalid upgrade time: {}", self.upgrade_time));
+            return Err(ValidationError::UpgradeTime(self.upgrade_time));
         }
 
         // Check if home folder exists
-        let exists = path_exists(&self.home);
-        if !exists {
-            return Err(format!(
-                "Home folder does not exist: {}",
-                &self
-                    .home
-                    .to_str()
-                    .expect("Failed to convert home path to string")
-            ));
+        if !path_exists(&self.home) {
+            return Err(ValidationError::HomeDir(self.home.clone()));
         }
 
         Ok(())
@@ -116,65 +106,47 @@ impl UpgradeHelper {
 }
 
 /// Returns the upgrade helper from a JSON file.
-pub fn from_json(path: &Path) -> Result<UpgradeHelper, String> {
-    let json = match fs::read_to_string(path) {
-        Ok(contents) => contents,
-        Err(e) => {
-            return Err(format!(
-                "Failed to read contents of file '{}': {}",
-                path.to_str().unwrap(),
-                e
-            ));
-        }
-    };
+pub fn from_json(path: &Path) -> Result<UpgradeHelper, HelperError> {
+    let json = fs::read_to_string(path)?;
 
-    match serde_json::from_str(&json) {
-        Ok(helper) => Ok(helper),
-        Err(e) => Err(format!(
-            "Failed to convert contents of file '{}' to JSON: {}",
-            path.to_str().unwrap(),
-            e
-        )),
-    }
+    Ok(serde_json::from_str(&json)?)
 }
 
-/// Returns the upgrade helper from the command line arguments.
-pub fn get_helper_from_json(path: &Path) -> Result<UpgradeHelper, String> {
-    // Read the helper configuration
+/// Returns the upgrade helper from the command line arguments and
+/// runs some basic validation on the configuration.
+pub fn get_helper_from_json(path: &Path) -> Result<UpgradeHelper, HelperError> {
     let upgrade_helper = from_json(path)?;
-
-    // Validate the helper configuration
     upgrade_helper.validate()?;
 
     Ok(upgrade_helper)
 }
 
 /// Creates a new instance of the upgrade helper based on querying the user for the necessary input.
-pub async fn get_helper_from_inputs() -> Result<UpgradeHelper, String> {
+pub async fn get_helper_from_inputs() -> Result<UpgradeHelper, InputError> {
     // Query and check the network to use
     let used_network = inputs::get_used_network()?;
 
     // Query and check the version to upgrade from
-    let previous_version = inputs::get_text("Previous version to upgrade from:");
+    let previous_version = inputs::get_text("Previous version to upgrade from:")?;
     let valid_version = version::is_valid_version(previous_version.as_str());
     if !valid_version {
-        return Err(format!("Invalid previous version: {}", previous_version));
+        return Err(InputError::from(ValidationError::PreviousVersion(
+            previous_version,
+        )));
     }
 
     // Query and check the target version to upgrade to
-    let target_version = inputs::get_text("Target version to upgrade to:");
-    let valid_version =
-        version::is_valid_version_for_network(used_network, target_version.as_str());
-    if !valid_version {
-        return Err(format!(
-            "Invalid target version for {}: {}",
-            used_network, target_version
-        ));
+    let target_version = inputs::get_text("Target version to upgrade to:")?;
+    if !version::is_valid_version_for_network(used_network, target_version.as_str()) {
+        return Err(InputError::from(ValidationError::TargetVersion(
+            used_network,
+            target_version,
+        )));
     }
 
     // Query and check the upgrade time and height
     let voting_period = get_voting_period(used_network);
-    let upgrade_time = inputs::get_upgrade_date(voting_period, Utc::now())?;
+    let upgrade_time = inputs::get_upgrade_time(voting_period, Utc::now())?;
     let upgrade_height = get_estimated_height(used_network, upgrade_time).await;
 
     // Create an instance of the helper
@@ -251,17 +223,8 @@ mod helper_tests {
 
 /// Checks whether a given path exists.
 fn path_exists(path: &Path) -> bool {
-    let res = fs::metadata(path);
-    match res {
-        Ok(_) => {}
-        Err(_) => {
-            return false;
-        }
-    }
-
-    let metadata = res.unwrap();
-    if metadata.is_dir() || metadata.is_file() {
-        true
+    if let Ok(metadata) = fs::metadata(path) {
+        metadata.is_dir() || metadata.is_file()
     } else {
         false
     }
