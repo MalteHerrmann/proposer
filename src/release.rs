@@ -1,5 +1,5 @@
 use crate::errors::PrepareError;
-use crate::http::get;
+use crate::http::get_body;
 use octocrab::{
     models::repos::{Asset, Release},
     Octocrab, Result,
@@ -164,8 +164,7 @@ async fn get_checksum_map(assets: Vec<Asset>) -> Result<HashMap<String, String>,
         Some(checksum) => checksum,
         None => return Err(PrepareError::GetChecksumAsset),
     };
-    let response = get(checksum.browser_download_url.clone()).await?;
-    let body = response.text().await?;
+    let body = get_body(checksum.browser_download_url.clone()).await?;
 
     let mut checksums = HashMap::new();
 
