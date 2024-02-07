@@ -57,7 +57,8 @@ async fn get_block(network: Network, height: u64) -> Block {
         .await
         .expect("the block should be successfully queried");
 
-    process_block_body(response.text().await.unwrap())
+    let body = response.text().await.unwrap();
+    process_block_body(body)
 }
 
 /// Returns the appropriate REST provider for the given network.

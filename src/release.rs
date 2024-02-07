@@ -201,7 +201,9 @@ mod assets_tests {
 
     #[tokio::test]
     async fn test_get_checksum_map_pass() {
-        let release = get_release(&get_instance(), "v14.0.0").await.unwrap();
+        let release: Release =
+            serde_json::from_str(include_str!("testdata/release.json")).unwrap();
+
         let checksums = get_checksum_map(release.assets.clone()).await.unwrap();
 
         assert!(checksums.contains_key("evmos_14.0.0_Linux_amd64.tar.gz"));
@@ -212,26 +214,37 @@ mod assets_tests {
 
     #[tokio::test]
     async fn test_get_asset_string_pass() {
-        let release = get_release(&get_instance(), "v15.0.0").await.expect("Failed to get release");
+        let release: Release =
+            serde_json::from_str(include_str!("testdata/release.json")).unwrap();
 
         let assets = get_asset_string(&release)
             .await
             .expect("Failed to get asset string");
 
         let expected_assets = json!({
-            "binaries": {
-                "darwin/arm64" :"https://github.com/evmos/evmos/releases/download/v15.0.0/evmos_15.0.0_Darwin_arm64.tar.gz?checksum=3855eaec2fc69eafe8cff188b8ca832c2eb7d20ca3cb0f55558143a68cdc600f",
-                "darwin/amd64":"https://github.com/evmos/evmos/releases/download/v15.0.0/evmos_15.0.0_Darwin_amd64.tar.gz?checksum=ba454bb8acf5c2cf09a431b0cd3ef77dfc303dc57c14518b38fb3b7b8447797a",
-                "linux/arm64":"https://github.com/evmos/evmos/releases/download/v15.0.0/evmos_15.0.0_Linux_arm64.tar.gz?checksum=aae9513f9cc5ff96d799450aaa39a84bea665b7369e7170dd62bb56130dd4a21",
-                "linux/amd64":"https://github.com/evmos/evmos/releases/download/v15.0.0/evmos_15.0.0_Linux_amd64.tar.gz?checksum=9f7af7f923ff4c60c11232ba060bef4dfff807282d0470a070c87c6de937a611",
+            "binaries":{
+                "darwin/amd64":"https://github.com/evmos/evmos/releases/download/v14.0.0/evmos_14.0.0_Darwin_amd64.tar.gz?checksum=35202b28c856d289778010a90fdd6c49c49a451a8d7f60a13b0612d0cd70e178",
+                "darwin/arm64":"https://github.com/evmos/evmos/releases/download/v14.0.0/evmos_14.0.0_Darwin_arm64.tar.gz?checksum=541d4bac1513c84278c8d6b39c86aca109cc1ecc17652df56e57488ffbafd2d5",
+                "linux/amd64":"https://github.com/evmos/evmos/releases/download/v14.0.0/evmos_14.0.0_Linux_amd64.tar.gz?checksum=427c2c4a37f3e8cf6833388240fcda152a5372d4c5132ca2e3861a7085d35cd0",
+                "linux/arm64":"https://github.com/evmos/evmos/releases/download/v14.0.0/evmos_14.0.0_Linux_arm64.tar.gz?checksum=a84279d66b6b0ecd87b85243529d88598995eeb124bc16bb8190a7bf022825fb",
             }
         });
 
-        let expected_assets_string = expected_assets.to_string();
-        assert_eq!(assets, expected_assets_string, "expected different assets");
+        assert_eq!(assets, expected_assets.to_string(), "expected different assets");
     }
 
-    #[test]
+    #[tokio::test]
+    async fn test_get_asset_string_fail() {
+        let release: Release =
+            serde_json::from_str(include_str!("testdata/release_no_assets.json")).unwrap();
+
+        assert!(get_asset_string(&release)
+            .await
+            .is_err()
+        );
+    }
+
+        #[test]
     fn test_get_os_key_from_asset_name_pass() {
         let name = "evmos_14.0.0_Linux_amd64.tar.gz";
         let key = get_os_key_from_asset_name(name).unwrap();
