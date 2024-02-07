@@ -1,5 +1,8 @@
-use crate::{block::N_BLOCKS, errors::ProposerError, helper::UpgradeHelper, inputs::get_time_string, network::Network};
-use handlebars::{Handlebars};
+use crate::{
+    block::N_BLOCKS, errors::ProposerError, helper::UpgradeHelper, inputs::get_time_string,
+    network::Network,
+};
+use handlebars::Handlebars;
 use num_format::ToFormattedString;
 use serde_json::json;
 

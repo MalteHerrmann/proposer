@@ -1,5 +1,5 @@
-use crate::network::Network;
 use crate::errors::InputError;
+use crate::network::Network;
 use chrono::{
     DateTime, Datelike, Duration, NaiveDateTime, NaiveTime, TimeZone, Timelike, Utc, Weekday,
 };
@@ -8,8 +8,19 @@ use std::path::PathBuf;
 use std::{fs, ops::Add};
 
 const MONTHS: [&str; 13] = [
-    "", "January", "February", "March", "April", "May", "June", "July", "August", "September",
-    "October", "November", "December",
+    "",
+    "January",
+    "February",
+    "March",
+    "April",
+    "May",
+    "June",
+    "July",
+    "August",
+    "September",
+    "October",
+    "November",
+    "December",
 ];
 
 /// Scans the current folder for existing proposal configurations (stored as JSON)
@@ -32,12 +43,7 @@ pub fn choose_config() -> Result<PathBuf, InputError> {
 
     // Collect the file names
     let config_files: Vec<String> = json_files
-        .map(|file| {
-            file.unwrap()
-                .path()
-                .to_string_lossy()
-                .to_string()
-        })
+        .map(|file| file.unwrap().path().to_string_lossy().to_string())
         .collect();
 
     if config_files.is_empty() {
@@ -47,9 +53,7 @@ pub fn choose_config() -> Result<PathBuf, InputError> {
     // Prompt the user to select the configuration file
     //
     // FIXME: Why does the question mark operator not work here? It doesn't register the #[from] attribute in the error enum somehow?
-    match Select::new(
-        "Select configuration file", config_files,
-    ).prompt() {
+    match Select::new("Select configuration file", config_files).prompt() {
         Ok(file) => Ok(current_dir.join(file)),
         Err(e) => Err(InputError::UserInput(e)),
     }

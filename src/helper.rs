@@ -1,9 +1,9 @@
 use crate::block::get_estimated_height;
+use crate::errors::{HelperError, InputError, ValidationError};
 use crate::{inputs, network::Network, version};
 use chrono::{DateTime, Duration, Utc};
 use std::path::{Path, PathBuf};
 use std::{fs, io};
-use crate::errors::{HelperError, InputError, ValidationError};
 
 /// Contains all relevant information for the scheduled upgrade.
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
@@ -70,13 +70,16 @@ impl UpgradeHelper {
         // Check if the target version is valid
         if !version::is_valid_version_for_network(self.network, self.target_version.as_str()) {
             return Err(ValidationError::TargetVersion(
-                self.network, self.target_version.clone()
+                self.network,
+                self.target_version.clone(),
             ));
         }
 
         // Check if the previous version is valid
         if !version::is_valid_version(self.previous_version.as_str()) {
-            return Err(ValidationError::PreviousVersion(self.previous_version.clone()));
+            return Err(ValidationError::PreviousVersion(
+                self.previous_version.clone(),
+            ));
         }
 
         // Check if the upgrade time is valid
@@ -127,14 +130,17 @@ pub async fn get_helper_from_inputs() -> Result<UpgradeHelper, InputError> {
     let previous_version = inputs::get_text("Previous version to upgrade from:")?;
     let valid_version = version::is_valid_version(previous_version.as_str());
     if !valid_version {
-        return Err(InputError::from(ValidationError::PreviousVersion(previous_version)));
+        return Err(InputError::from(ValidationError::PreviousVersion(
+            previous_version,
+        )));
     }
 
     // Query and check the target version to upgrade to
     let target_version = inputs::get_text("Target version to upgrade to:")?;
     if !version::is_valid_version_for_network(used_network, target_version.as_str()) {
         return Err(InputError::from(ValidationError::TargetVersion(
-            used_network, target_version
+            used_network,
+            target_version,
         )));
     }
 

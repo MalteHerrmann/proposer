@@ -1,5 +1,6 @@
 use crate::{
     command,
+    errors::PrepareError,
     helper::{get_helper_from_inputs, get_helper_from_json},
     inputs, proposal, utils,
 };
@@ -37,7 +38,7 @@ pub struct GenerateCommandArgs {
 }
 
 /// Runs the logic for the `generate-command` sub-command.
-pub async fn generate_command(args: GenerateCommandArgs) -> Result<(), Box<dyn std::error::Error>> {
+pub async fn generate_command(args: GenerateCommandArgs) -> Result<(), PrepareError> {
     let config = match args.config {
         Some(config_file_name) => config_file_name,
         None => inputs::choose_config()?, // NOTE: if no config file is provided, prompt the user to choose one
@@ -94,7 +95,10 @@ pub async fn generate_proposal() {
 
     // Write the proposal description to file
     if let Err(_) = utils::write_content_to_file(&description, &upgrade_helper.proposal_file_name) {
-        println!("failed to write proposal to file: {}", &upgrade_helper.proposal_file_name);
+        println!(
+            "failed to write proposal to file: {}",
+            &upgrade_helper.proposal_file_name
+        );
         process::exit(1);
     }
 }

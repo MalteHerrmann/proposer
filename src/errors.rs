@@ -1,8 +1,8 @@
-use std::path::PathBuf;
+use crate::network::Network;
 use chrono::{DateTime, Utc};
 use inquire::InquireError;
+use std::path::PathBuf;
 use thiserror::Error;
-use crate::network::Network;
 
 #[derive(Error, Debug)]
 pub enum ProposerError {
@@ -46,4 +46,22 @@ pub enum InputError {
     UserInput(#[from] InquireError),
     #[error("Failed to validate input: {0}")]
     Validate(#[from] ValidationError),
+}
+
+#[derive(Error, Debug)]
+pub enum PrepareError {
+    #[error("Failed to download checksums: {0}")]
+    DownloadChecksums(#[from] reqwest::Error),
+    #[error("Failed user input: {0}")]
+    Input(#[from] InputError),
+    #[error("checksum.txt not found in assets")]
+    GetChecksumAsset,
+    #[error("Failed to get helper: {0}")]
+    GetHelper(#[from] HelperError),
+    #[error("Failed to get release from GitHub: {0}")]
+    GetRelease(#[from] octocrab::Error),
+    #[error("Failed to read proposal file: {0}")]
+    ReadProposal(#[from] std::io::Error),
+    #[error("Failed to render command: {0}")]
+    RenderCommand(#[from] handlebars::RenderError),
 }
