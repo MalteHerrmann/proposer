@@ -36,7 +36,7 @@ mod release_tests {
     ///
     /// This is used to mock the GitHub API without having to actually run queries to it.
     async fn setup_api(template: ResponseTemplate) -> MockServer {
-        const release_url: &str = "/repos/evmos/evmos/releases/tags/v14.0.0";
+        const RELEASE_URL: &str = "/repos/evmos/evmos/releases/tags/v14.0.0";
 
         // Create a mock server
         let mock_server = MockServer::start().await;
@@ -44,7 +44,7 @@ mod release_tests {
         // Set up the mock server to return the fake response when receiving
         // a GET request on the release URL
         Mock::given(method("GET"))
-            .and(path(release_url))
+            .and(path(RELEASE_URL))
             .respond_with(template)
             .mount(&mock_server)
             .await;
@@ -52,7 +52,7 @@ mod release_tests {
         // Set up the error handling for failed get requests
         setup_error_handler(
             &mock_server,
-            &format!("GET on {} not received", release_url),
+            &format!("GET on {} not received", RELEASE_URL),
         )
         .await;
 
@@ -198,18 +198,6 @@ pub fn get_instance() -> Arc<Octocrab> {
 mod assets_tests {
     use super::*;
     use serde_json::json;
-
-    #[tokio::test]
-    async fn test_get_release_pass() {
-        let release = get_release(&get_instance(), "v14.0.0").await.unwrap();
-        assert_eq!(release.tag_name, "v14.0.0");
-    }
-
-    #[tokio::test]
-    async fn test_get_release_fail() {
-        let res = get_release(&get_instance(), "invalidj.xjaf/ie").await;
-        assert_eq!(res.is_err(), true);
-    }
 
     #[tokio::test]
     async fn test_get_checksum_map_pass() {

@@ -1,7 +1,7 @@
 use crate::errors::PrepareError;
 use crate::helper::UpgradeHelper;
 use crate::network::Network;
-use crate::release::{get_asset_string, get_release};
+use crate::release::{get_asset_string, get_instance, get_release};
 use crate::utils;
 use handlebars::{no_escape, Handlebars};
 use serde_json::json;
@@ -21,7 +21,7 @@ pub async fn run_command_preparation(helper: &UpgradeHelper) -> Result<(), Prepa
 /// Prepares the command to submit the proposal using the Evmos CLI.
 async fn prepare_command(helper: &UpgradeHelper) -> Result<String, PrepareError> {
     let description = get_description_from_md(&helper.proposal_file_name)?;
-    let release = get_release(&octocrab::instance(), helper.target_version.as_str()).await?;
+    let release = get_release(&get_instance(), helper.target_version.as_str()).await?;
     let assets = get_asset_string(&release).await?;
 
     // TODO: get fees from network conditions?
