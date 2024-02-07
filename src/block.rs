@@ -68,8 +68,6 @@ async fn get_block(base_url: Url, height: u64) -> Block {
         .await
         .expect("the block should be successfully queried");
 
-    println!("body: {}", body);
-
     process_block_body(body)
 }
 
