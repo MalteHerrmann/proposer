@@ -138,9 +138,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_get_latest_block_mainnet() {
-        let block = get_latest_block(
-            get_rest_provider(Network::Mainnet)
-        ).await;
+        let block = get_latest_block(get_rest_provider(Network::Mainnet)).await;
         assert!(block.height > 0);
     }
 

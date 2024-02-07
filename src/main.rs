@@ -12,13 +12,11 @@ mod release;
 mod utils;
 mod version;
 
-use std::process;
-use clap::Parser; // NOTE: needs to be imported for Cli::parse() to work
+use clap::Parser;
+use std::process; // NOTE: needs to be imported for Cli::parse() to work
 
 // Crate imports
-use crate::{
-  cli::{SubCommand, CLI},
-};
+use crate::cli::{SubCommand, CLI};
 
 #[tokio::main]
 async fn main() {

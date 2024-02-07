@@ -200,8 +200,7 @@ mod assets_tests {
 
     #[tokio::test]
     async fn test_get_checksum_map_pass() {
-        let release: Release =
-            serde_json::from_str(include_str!("testdata/release.json")).unwrap();
+        let release: Release = serde_json::from_str(include_str!("testdata/release.json")).unwrap();
 
         let checksums = get_checksum_map(release.assets.clone()).await.unwrap();
 
@@ -213,8 +212,7 @@ mod assets_tests {
 
     #[tokio::test]
     async fn test_get_asset_string_pass() {
-        let release: Release =
-            serde_json::from_str(include_str!("testdata/release.json")).unwrap();
+        let release: Release = serde_json::from_str(include_str!("testdata/release.json")).unwrap();
 
         let assets = get_asset_string(&release)
             .await
@@ -229,7 +227,11 @@ mod assets_tests {
             }
         });
 
-        assert_eq!(assets, expected_assets.to_string(), "expected different assets");
+        assert_eq!(
+            assets,
+            expected_assets.to_string(),
+            "expected different assets"
+        );
     }
 
     #[tokio::test]
@@ -237,13 +239,10 @@ mod assets_tests {
         let release: Release =
             serde_json::from_str(include_str!("testdata/release_no_assets.json")).unwrap();
 
-        assert!(get_asset_string(&release)
-            .await
-            .is_err()
-        );
+        assert!(get_asset_string(&release).await.is_err());
     }
 
-        #[test]
+    #[test]
     fn test_get_os_key_from_asset_name_pass() {
         let name = "evmos_14.0.0_Linux_amd64.tar.gz";
         let key = get_os_key_from_asset_name(name).unwrap();

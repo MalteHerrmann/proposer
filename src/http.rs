@@ -3,10 +3,7 @@ use url::Url;
 
 // Queries the given URL and returns the response body.
 pub async fn get_body(url: Url) -> reqwest::Result<String> {
-    getReqwest(url)
-        .await?
-        .text()
-        .await
+    getReqwest(url).await?.text().await
 }
 
 #[cfg(test)]
