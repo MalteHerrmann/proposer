@@ -4,13 +4,30 @@ use inquire::InquireError;
 use std::path::PathBuf;
 use thiserror::Error;
 
+/// High level error type than can occur when handling the block information
+#[derive(Error, Debug)]
+pub enum BlockError {
+    #[error("Failed to get block information: {0}")]
+    GetBlock(#[from] reqwest::Error),
+    #[error("Failed to parse block body")]
+    ParseBlock,
+    #[error("Failed to get parse date: {0}")]
+    ParseDate(#[from] chrono::ParseError),
+    #[error("Failed to parse int: {0}")]
+    ParseInt(#[from] std::num::ParseIntError),
+    #[error("Failed to parse url: {0}")]
+    ParseUrl(#[from] url::ParseError),
+    #[error("Failed to build regex: {0}")]
+    Regex(#[from] regex::Error),
+}
+
 /// High level error type that can occur when generating the submission command
 #[derive(Error, Debug)]
 pub enum CommandError {
-    #[error("Failed to get user input: {0}")]
-    Input(#[from] InputError),
     #[error("Failed to get helper: {0}")]
     GetHelper(#[from] HelperError),
+    #[error("Failed to get user input: {0}")]
+    Input(#[from] InputError),
     #[error("Failed to prepare command: {0}")]
     Prepare(#[from] PrepareError),
     #[error("Failed to render command: {0}")]
@@ -59,6 +76,8 @@ pub enum HelperError {
 /// Error type for failed user input
 #[derive(Error, Debug)]
 pub enum InputError {
+    #[error("Error getting block information: {0}")]
+    Block(#[from] BlockError),
     #[error("Invalid network: {0}")]
     InvalidNetwork(String),
     #[error("Got IO error: {0}")]
