@@ -214,10 +214,10 @@ mod assets_tests {
     async fn test_get_asset_string_pass() {
         let release: Release = serde_json::from_str(include_str!("testdata/release.json")).unwrap();
 
-        let assets = get_asset_string(&release)
-            .await
-            .expect("Failed to get asset string");
+        let res = get_asset_string(&release).await;
+        assert!(res.is_ok());
 
+        let assets = res.unwrap();
         let expected_assets = json!({
             "binaries":{
                 "darwin/amd64":"https://github.com/evmos/evmos/releases/download/v14.0.0/evmos_14.0.0_Darwin_amd64.tar.gz?checksum=35202b28c856d289778010a90fdd6c49c49a451a8d7f60a13b0612d0cd70e178",

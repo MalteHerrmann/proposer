@@ -48,7 +48,6 @@ async fn prepare_command(helper: &UpgradeHelper) -> Result<String, PrepareError>
 
     handlebars
         .register_template_file("command", "src/templates/command.hbs")
-        // TODO: remove expect
         .expect("Failed to register template file");
 
     let command = handlebars.render("command", &data)?;

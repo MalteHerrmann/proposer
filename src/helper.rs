@@ -147,7 +147,7 @@ pub async fn get_helper_from_inputs() -> Result<UpgradeHelper, InputError> {
     // Query and check the upgrade time and height
     let voting_period = get_voting_period(used_network);
     let upgrade_time = inputs::get_upgrade_time(voting_period, Utc::now())?;
-    let upgrade_height = get_estimated_height(used_network, upgrade_time).await;
+    let upgrade_height = get_estimated_height(used_network, upgrade_time).await?;
 
     // Create an instance of the helper
     Ok(UpgradeHelper::new(
