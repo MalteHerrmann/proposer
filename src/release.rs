@@ -1,3 +1,4 @@
+use crate::errors::PrepareError;
 use crate::http::get;
 use octocrab::{
     models::repos::{Asset, Release},
@@ -17,11 +18,8 @@ pub async fn get_release(octocrab_instance: &Octocrab, version: &str) -> Result<
 
 /// Checks if the release for the target version already exists by
 /// sending a HTTP request to the GitHub release page.
-pub async fn check_release_exists(octocrab_instance: &Octocrab, version: &str) -> bool {
-    match get_release(&octocrab_instance, version).await {
-        Ok(_) => true,
-        _ => false,
-    }
+pub async fn check_release_exists(octocrab_instance: &Octocrab, version: &str) -> Result<Release> {
+    get_release(&octocrab_instance, version).await
 }
 
 #[cfg(test)]
@@ -106,24 +104,14 @@ mod release_tests {
 
 /// Returns the asset string for the release assets.
 /// The asset string is used in the Evmos CLI command.
-pub async fn get_asset_string(release: &Release) -> Option<String> {
-    let checksums: HashMap<String, String>;
-    match get_checksum_map(release.assets.clone()).await {
-        Some(returned_checksums) => {
-            checksums = returned_checksums;
-        }
-        None => {
-            println!("checksum.txt not found in release assets");
-            return None;
-        }
-    }
+pub async fn get_asset_string(release: &Release) -> Result<String, PrepareError> {
+    let checksums = get_checksum_map(release.assets.clone()).await?;
 
-    let assets = build_assets_json(release, checksums)?;
-    Some(assets.to_string())
+    Ok(build_assets_json(release, checksums).to_string())
 }
 
 /// Builds the assets JSON object.
-fn build_assets_json(release: &Release, checksums: HashMap<String, String>) -> Option<Value> {
+fn build_assets_json(release: &Release, checksums: HashMap<String, String>) -> Value {
     let mut assets = serde_json::json!({
         "binaries": {}
     });
@@ -132,7 +120,6 @@ fn build_assets_json(release: &Release, checksums: HashMap<String, String>) -> O
         let os_key = match get_os_key_from_asset_name(&asset.name) {
             Some(key) => key,
             None => {
-                println!("OS key not found for asset {}", asset.name);
                 continue;
             }
         };
@@ -140,7 +127,6 @@ fn build_assets_json(release: &Release, checksums: HashMap<String, String>) -> O
         let checksum = match checksums.get(&asset.name) {
             Some(checksum) => checksum,
             None => {
-                println!("Checksum not found for asset {}", asset.name);
                 continue;
             }
         };
@@ -150,7 +136,7 @@ fn build_assets_json(release: &Release, checksums: HashMap<String, String>) -> O
         insert_into_assets(&mut assets, os_key, url);
     }
 
-    Some(assets)
+    assets
 }
 
 /// Inserts a new key value pair into the assets binaries.
@@ -162,14 +148,7 @@ fn insert_into_assets(assets: &mut Value, key: String, url: String) {
 
 /// Returns the checksum from the release assets.
 fn get_checksum_from_assets(assets: &[Asset]) -> Option<&Asset> {
-    // TODO: improve handling here? use getter?
-    for asset in assets {
-        if asset.name == "checksums.txt" {
-            return Some(asset);
-        }
-    }
-
-    None
+    assets.iter().find(|asset| asset.name == "checksums.txt")
 }
 
 /// Returns the OS key from the asset name.
@@ -191,44 +170,62 @@ fn get_os_key_from_asset_name(name: &str) -> Option<String> {
 }
 
 /// Downloads the checksum file from the release assets and returns the built checksum string.
-async fn get_checksum_map(assets: Vec<Asset>) -> Option<HashMap<String, String>> {
-    let checksum = get_checksum_from_assets(assets.as_slice())?;
-
-    return match get(checksum.browser_download_url.clone()).await {
-        Ok(response) => {
-            let body = response.text().await.unwrap();
-            let mut checksums = HashMap::new();
-
-            for line in body.lines() {
-                let line = line.trim();
-                let parts: Vec<&str> = line.split_whitespace().collect();
-
-                if parts.len() != 2 {
-                    println!("Invalid checksum line: {}", line);
-                    continue;
-                }
-
-                // NOTE: Windows links are not supported in the submit-legacy-proposal command
-                if parts[1].contains("Windows") {
-                    continue;
-                }
-
-                checksums.insert(parts[1].to_string(), parts[0].to_string());
-            }
-
-            Some(checksums)
-        }
-        Err(_) => {
-            println!("Failed to download checksum file");
-            None
-        }
+async fn get_checksum_map(assets: Vec<Asset>) -> Result<HashMap<String, String>, PrepareError> {
+    let checksum = match get_checksum_from_assets(assets.as_slice()) {
+        Some(checksum) => checksum,
+        None => return Err(PrepareError::GetChecksumAsset),
     };
+    let response = get(checksum.browser_download_url.clone()).await?;
+    let body = response.text().await?;
+
+    let mut checksums = HashMap::new();
+
+    for line in body.lines() {
+        let line = line.trim();
+        let parts: Vec<&str> = line.split_whitespace().collect();
+
+        if parts.len() != 2 {
+            println!("Invalid checksum line: {}", line);
+            continue;
+        }
+
+        // NOTE: Windows links are not supported in the submit-legacy-proposal command
+        if parts[1].contains("Windows") {
+            continue;
+        }
+
+        checksums.insert(parts[1].to_string(), parts[0].to_string());
+    }
+
+    Ok(checksums)
 }
 
 #[cfg(test)]
 mod assets_tests {
     use super::*;
     use serde_json::json;
+
+    #[tokio::test]
+    async fn test_get_release_pass() {
+        let release = get_release("v14.0.0").await.unwrap();
+        assert_eq!(release.tag_name, "v14.0.0");
+    }
+
+    #[tokio::test]
+    async fn test_get_release_fail() {
+        let res = get_release("invalidj.xjaf/ie").await;
+        assert_eq!(res.is_err(), true);
+    }
+
+    #[tokio::test]
+    async fn test_check_release_exists_pass() {
+        assert!(check_release_exists("v14.0.0").await.is_ok());
+    }
+
+    #[tokio::test]
+    async fn test_check_release_exists_fail() {
+        assert!(check_release_exists("v14.0.8").await.is_err());
+    }
 
     #[tokio::test]
     async fn test_get_checksum_map_pass() {
@@ -249,7 +246,6 @@ mod assets_tests {
             .await
             .expect("Failed to get asset string");
 
-        println!("assets: {}", assets);
         let expected_assets = json!({
             "binaries": {
                 "darwin/arm64" :"https://github.com/evmos/evmos/releases/download/v15.0.0/evmos_15.0.0_Darwin_arm64.tar.gz?checksum=3855eaec2fc69eafe8cff188b8ca832c2eb7d20ca3cb0f55558143a68cdc600f",
