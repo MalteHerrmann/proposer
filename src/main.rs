@@ -1,7 +1,6 @@
 mod block;
 mod cli;
 mod command;
-mod constants;
 mod errors;
 mod helper;
 mod http;
@@ -13,14 +12,11 @@ mod release;
 mod utils;
 mod version;
 
-use chrono::Utc;
-use helper::UpgradeHelper;
-// External imports
+use std::process;
 use clap::Parser; // NOTE: needs to be imported for Cli::parse() to work
 
 // Crate imports
 use crate::{
-  block::get_estimated_height,
   cli::{SubCommand, CLI},
 };
 

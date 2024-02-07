@@ -6,20 +6,15 @@ use octocrab::{
 };
 use serde_json::Value;
 use std::collections::HashMap;
+use std::sync::Arc;
 
 /// Sends a HTTP request to the GitHub release page and returns the response.
-pub async fn get_release(octocrab_instance: &Octocrab, version: &str) -> Result<Release> {
-    octocrab_instance
+pub async fn get_release(instance: &Octocrab, version: &str) -> Result<Release> {
+    instance
         .repos("evmos", "evmos")
         .releases()
         .get_by_tag(version)
         .await
-}
-
-/// Checks if the release for the target version already exists by
-/// sending a HTTP request to the GitHub release page.
-pub async fn check_release_exists(octocrab_instance: &Octocrab, version: &str) -> Result<Release> {
-    get_release(&octocrab_instance, version).await
 }
 
 #[cfg(test)]
@@ -73,7 +68,7 @@ mod release_tests {
     #[tokio::test]
     async fn test_get_release_pass() {
         let release_response: Release =
-            serde_json::from_str(include_str!("resources/release.json")).unwrap();
+            serde_json::from_str(include_str!("testdata/release.json")).unwrap();
 
         let page_response = FakeRelease(release_response);
 
@@ -87,18 +82,12 @@ mod release_tests {
 
     #[tokio::test]
     async fn test_get_release_fail() {
-        let res = get_release("invalidj.xjaf/ie").await;
+        let template = ResponseTemplate::new(404);
+        let mock_server = setup_api(template).await;
+        let client = setup_octocrab(&mock_server.uri());
+
+        let res = get_release(&client, "invalidj.xjaf/ie").await;
         assert_eq!(res.is_err(), true);
-    }
-
-    #[tokio::test]
-    async fn test_check_release_exists_pass() {
-        assert_eq!(check_release_exists("v14.0.0").await, true);
-    }
-
-    #[tokio::test]
-    async fn test_check_release_exists_fail() {
-        assert_eq!(check_release_exists("v14.0.8").await, false);
     }
 }
 
@@ -200,6 +189,11 @@ async fn get_checksum_map(assets: Vec<Asset>) -> Result<HashMap<String, String>,
     Ok(checksums)
 }
 
+/// Returns an Octocrab instance.
+pub fn get_instance() -> Arc<Octocrab> {
+    octocrab::instance()
+}
+
 #[cfg(test)]
 mod assets_tests {
     use super::*;
@@ -207,29 +201,19 @@ mod assets_tests {
 
     #[tokio::test]
     async fn test_get_release_pass() {
-        let release = get_release("v14.0.0").await.unwrap();
+        let release = get_release(&get_instance(), "v14.0.0").await.unwrap();
         assert_eq!(release.tag_name, "v14.0.0");
     }
 
     #[tokio::test]
     async fn test_get_release_fail() {
-        let res = get_release("invalidj.xjaf/ie").await;
+        let res = get_release(&get_instance(), "invalidj.xjaf/ie").await;
         assert_eq!(res.is_err(), true);
     }
 
     #[tokio::test]
-    async fn test_check_release_exists_pass() {
-        assert!(check_release_exists("v14.0.0").await.is_ok());
-    }
-
-    #[tokio::test]
-    async fn test_check_release_exists_fail() {
-        assert!(check_release_exists("v14.0.8").await.is_err());
-    }
-
-    #[tokio::test]
     async fn test_get_checksum_map_pass() {
-        let release = get_release("v14.0.0").await.unwrap();
+        let release = get_release(&get_instance(), "v14.0.0").await.unwrap();
         let checksums = get_checksum_map(release.assets.clone()).await.unwrap();
 
         assert!(checksums.contains_key("evmos_14.0.0_Linux_amd64.tar.gz"));
@@ -240,7 +224,7 @@ mod assets_tests {
 
     #[tokio::test]
     async fn test_get_asset_string_pass() {
-        let release = get_release("v15.0.0").await.expect("Failed to get release");
+        let release = get_release(&get_instance(), "v15.0.0").await.expect("Failed to get release");
 
         let assets = get_asset_string(&release)
             .await
