@@ -1,27 +1,94 @@
 use crate::errors::PrepareError;
-use crate::http::get;
+use crate::http::get_body;
 use octocrab::{
     models::repos::{Asset, Release},
-    Result,
+    Octocrab, Result,
 };
 use serde_json::Value;
 use std::collections::HashMap;
+use std::sync::Arc;
 
 /// Sends a HTTP request to the GitHub release page and returns the response.
-pub async fn get_release(version: &str) -> Result<Release> {
-    let octocrab = octocrab::instance();
-
-    octocrab
+pub async fn get_release(instance: &Octocrab, version: &str) -> Result<Release> {
+    instance
         .repos("evmos", "evmos")
         .releases()
         .get_by_tag(version)
         .await
 }
 
-/// Checks if the release for the target version already exists by
-/// sending a HTTP request to the GitHub release page.
-pub async fn check_release_exists(version: &str) -> Result<Release> {
-    get_release(version).await
+#[cfg(test)]
+mod release_tests {
+    use super::*;
+    use crate::mock_error::setup_error_handler;
+    use serde::{Deserialize, Serialize};
+    use wiremock::{
+        matchers::{method, path},
+        Mock, MockServer, ResponseTemplate,
+    };
+
+    #[derive(Serialize, Deserialize)]
+    struct FakeRelease(Release);
+
+    /// Sets up a mock server to return the given response template
+    /// when receiving a GET request on the release URL.
+    /// Returns the mock server.
+    ///
+    /// This is used to mock the GitHub API without having to actually run queries to it.
+    async fn setup_api(template: ResponseTemplate) -> MockServer {
+        const RELEASE_URL: &str = "/repos/evmos/evmos/releases/tags/v14.0.0";
+
+        // Create a mock server
+        let mock_server = MockServer::start().await;
+
+        // Set up the mock server to return the fake response when receiving
+        // a GET request on the release URL
+        Mock::given(method("GET"))
+            .and(path(RELEASE_URL))
+            .respond_with(template)
+            .mount(&mock_server)
+            .await;
+
+        // Set up the error handling for failed get requests
+        setup_error_handler(
+            &mock_server,
+            &format!("GET on {} not received", RELEASE_URL),
+        )
+        .await;
+
+        // Return the mock server
+        mock_server
+    }
+
+    /// Sets up an Octocrab instance with the mock server URI.
+    fn setup_octocrab(uri: &str) -> Octocrab {
+        Octocrab::builder().base_uri(uri).unwrap().build().unwrap()
+    }
+
+    #[tokio::test]
+    async fn test_get_release_pass() {
+        let release_response: Release =
+            serde_json::from_str(include_str!("testdata/release.json")).unwrap();
+
+        let page_response = FakeRelease(release_response);
+
+        let template = ResponseTemplate::new(200).set_body_json(&page_response);
+        let mock_server = setup_api(template).await;
+
+        let client = setup_octocrab(&mock_server.uri());
+        let release = get_release(&client, "v14.0.0").await.unwrap();
+        assert_eq!(release.tag_name, "v14.0.0");
+    }
+
+    #[tokio::test]
+    async fn test_get_release_fail() {
+        let template = ResponseTemplate::new(404);
+        let mock_server = setup_api(template).await;
+        let client = setup_octocrab(&mock_server.uri());
+
+        let res = get_release(&client, "invalidj.xjaf/ie").await;
+        assert_eq!(res.is_err(), true);
+    }
 }
 
 /// Returns the asset string for the release assets.
@@ -97,8 +164,7 @@ async fn get_checksum_map(assets: Vec<Asset>) -> Result<HashMap<String, String>,
         Some(checksum) => checksum,
         None => return Err(PrepareError::GetChecksumAsset),
     };
-    let response = get(checksum.browser_download_url.clone()).await?;
-    let body = response.text().await?;
+    let body = get_body(checksum.browser_download_url.clone()).await?;
 
     let mut checksums = HashMap::new();
 
@@ -122,36 +188,20 @@ async fn get_checksum_map(assets: Vec<Asset>) -> Result<HashMap<String, String>,
     Ok(checksums)
 }
 
+/// Returns an Octocrab instance.
+pub fn get_instance() -> Arc<Octocrab> {
+    octocrab::instance()
+}
+
 #[cfg(test)]
-mod tests {
+mod assets_tests {
     use super::*;
     use serde_json::json;
 
     #[tokio::test]
-    async fn test_get_release_pass() {
-        let release = get_release("v14.0.0").await.unwrap();
-        assert_eq!(release.tag_name, "v14.0.0");
-    }
-
-    #[tokio::test]
-    async fn test_get_release_fail() {
-        let res = get_release("invalidj.xjaf/ie").await;
-        assert_eq!(res.is_err(), true);
-    }
-
-    #[tokio::test]
-    async fn test_check_release_exists_pass() {
-        assert!(check_release_exists("v14.0.0").await.is_ok());
-    }
-
-    #[tokio::test]
-    async fn test_check_release_exists_fail() {
-        assert!(check_release_exists("v14.0.8").await.is_err());
-    }
-
-    #[tokio::test]
     async fn test_get_checksum_map_pass() {
-        let release = get_release("v14.0.0").await.unwrap();
+        let release: Release = serde_json::from_str(include_str!("testdata/release.json")).unwrap();
+
         let checksums = get_checksum_map(release.assets.clone()).await.unwrap();
 
         assert!(checksums.contains_key("evmos_14.0.0_Linux_amd64.tar.gz"));
@@ -162,23 +212,34 @@ mod tests {
 
     #[tokio::test]
     async fn test_get_asset_string_pass() {
-        let release = get_release("v15.0.0").await.expect("Failed to get release");
+        let release: Release = serde_json::from_str(include_str!("testdata/release.json")).unwrap();
 
         let assets = get_asset_string(&release)
             .await
             .expect("Failed to get asset string");
 
         let expected_assets = json!({
-            "binaries": {
-                "darwin/arm64" :"https://github.com/evmos/evmos/releases/download/v15.0.0/evmos_15.0.0_Darwin_arm64.tar.gz?checksum=3855eaec2fc69eafe8cff188b8ca832c2eb7d20ca3cb0f55558143a68cdc600f",
-                "darwin/amd64":"https://github.com/evmos/evmos/releases/download/v15.0.0/evmos_15.0.0_Darwin_amd64.tar.gz?checksum=ba454bb8acf5c2cf09a431b0cd3ef77dfc303dc57c14518b38fb3b7b8447797a",
-                "linux/arm64":"https://github.com/evmos/evmos/releases/download/v15.0.0/evmos_15.0.0_Linux_arm64.tar.gz?checksum=aae9513f9cc5ff96d799450aaa39a84bea665b7369e7170dd62bb56130dd4a21",
-                "linux/amd64":"https://github.com/evmos/evmos/releases/download/v15.0.0/evmos_15.0.0_Linux_amd64.tar.gz?checksum=9f7af7f923ff4c60c11232ba060bef4dfff807282d0470a070c87c6de937a611",
+            "binaries":{
+                "darwin/amd64":"https://github.com/evmos/evmos/releases/download/v14.0.0/evmos_14.0.0_Darwin_amd64.tar.gz?checksum=35202b28c856d289778010a90fdd6c49c49a451a8d7f60a13b0612d0cd70e178",
+                "darwin/arm64":"https://github.com/evmos/evmos/releases/download/v14.0.0/evmos_14.0.0_Darwin_arm64.tar.gz?checksum=541d4bac1513c84278c8d6b39c86aca109cc1ecc17652df56e57488ffbafd2d5",
+                "linux/amd64":"https://github.com/evmos/evmos/releases/download/v14.0.0/evmos_14.0.0_Linux_amd64.tar.gz?checksum=427c2c4a37f3e8cf6833388240fcda152a5372d4c5132ca2e3861a7085d35cd0",
+                "linux/arm64":"https://github.com/evmos/evmos/releases/download/v14.0.0/evmos_14.0.0_Linux_arm64.tar.gz?checksum=a84279d66b6b0ecd87b85243529d88598995eeb124bc16bb8190a7bf022825fb",
             }
         });
 
-        let expected_assets_string = expected_assets.to_string();
-        assert_eq!(assets, expected_assets_string, "expected different assets");
+        assert_eq!(
+            assets,
+            expected_assets.to_string(),
+            "expected different assets"
+        );
+    }
+
+    #[tokio::test]
+    async fn test_get_asset_string_fail() {
+        let release: Release =
+            serde_json::from_str(include_str!("testdata/release_no_assets.json")).unwrap();
+
+        assert!(get_asset_string(&release).await.is_err());
     }
 
     #[test]

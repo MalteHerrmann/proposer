@@ -1,10 +1,17 @@
 extern crate reqwest;
-use crate::{http::get, network::Network};
+use crate::{http::get_body, network::Network};
 use chrono::{DateTime, TimeZone, Utc};
 use regex::Captures;
 use url::Url;
 
+/// The number of blocks to use for the block time estimation.
 pub const N_BLOCKS: u64 = 50_000;
+
+/// The REST endpoint for querying blocks.
+const BLOCKS_ENDPOINT: &str = "cosmos/base/tendermint/v1beta1/blocks/";
+
+/// The REST endpoint for querying the latest block.
+const LATEST_BLOCK_ENDPOINT: &str = "cosmos/base/tendermint/v1beta1/blocks/latest";
 
 /// Represents a block from the Evmos network.
 #[derive(Debug)]
@@ -14,9 +21,13 @@ pub struct Block {
 }
 
 /// Gets the estimated block height for the given upgrade time.
+///
+/// TODO: add error handling
 pub async fn get_estimated_height(network: Network, upgrade_time: DateTime<Utc>) -> u64 {
-    let block = get_latest_block(network).await;
-    let block_minus_n = get_block(network, block.height - N_BLOCKS).await;
+    let base_url = get_rest_provider(network);
+    let block = get_latest_block(base_url).await;
+    let base_url = get_rest_provider(network);
+    let block_minus_n = get_block(base_url, block.height - N_BLOCKS).await;
     let seconds_per_block: f32 =
         (block.time - block_minus_n.time).num_seconds() as f32 / N_BLOCKS as f32;
 
@@ -27,52 +38,55 @@ pub async fn get_estimated_height(network: Network, upgrade_time: DateTime<Utc>)
 }
 
 /// Gets the latest block from the Evmos network.
-async fn get_latest_block(network: Network) -> Block {
-    let url = get_url(network, "cosmos/base/tendermint/v1beta1/blocks/latest").unwrap();
-    let response = get(url)
+///
+/// TODO: add error handling
+async fn get_latest_block(base_url: Url) -> Block {
+    let url = base_url
+        .join(LATEST_BLOCK_ENDPOINT)
+        .expect("the latest block endpoint should be valid");
+
+    let body = get_body(url)
         .await
         .expect("the latest block should be successfully queried");
 
-    process_block_body(response.text().await.unwrap())
-}
-
-/// Builds the URL for the given REST endpoint.
-fn get_url(network: Network, endpoint: &str) -> Result<Url, url::ParseError> {
-    let base_url = get_rest_provider(network);
-    base_url.join(endpoint)
+    process_block_body(body)
 }
 
 /// Gets the block at the given height from the Evmos network.
-async fn get_block(network: Network, height: u64) -> Block {
+///
+/// TODO: add error handling
+/// TODO: add mocking
+async fn get_block(base_url: Url, height: u64) -> Block {
     // Combine the REST endpoint with the block height
-    let base_url = get_rest_provider(network);
-    let blocks_endpoint = "cosmos/base/tendermint/v1beta1/blocks/";
     let url = base_url
-        .join(blocks_endpoint)
+        .join(BLOCKS_ENDPOINT)
         .expect("the blocks endpoint should be valid")
         .join(height.to_string().as_str())
         .expect("the blocks endpoint should be valid");
 
-    let response = get(url)
+    let body = get_body(url)
         .await
         .expect("the block should be successfully queried");
 
-    process_block_body(response.text().await.unwrap())
+    process_block_body(body)
 }
 
 /// Returns the appropriate REST provider for the given network.
+///
+/// TODO: add error handling
 fn get_rest_provider(network: Network) -> Url {
-    let base_url: &str;
-    match network {
-        Network::LocalNode => base_url = "http://localhost:1317",
-        Network::Mainnet => base_url = "https://rest.evmos.lava.build",
-        Network::Testnet => base_url = "https://rest.evmos-testnet.lava.build",
+    let base_url = match network {
+        Network::LocalNode => "http://localhost:1317",
+        Network::Mainnet => "https://rest.evmos.lava.build",
+        Network::Testnet => "https://rest.evmos-testnet.lava.build",
     };
 
     Url::parse(base_url).unwrap()
 }
 
 /// Processes the block body.
+///
+/// TODO: add error handling
 fn process_block_body(body: String) -> Block {
     // build regex to find the block height
     let re = regex::Regex::new(r#"height":"(\d+)","time":"([T0-9\-:]+)"#).unwrap();
@@ -122,19 +136,23 @@ mod tests {
 
     #[tokio::test]
     async fn test_get_latest_block_mainnet() {
-        let block = get_latest_block(Network::Mainnet).await;
+        let block = get_latest_block(get_rest_provider(Network::Mainnet)).await;
         assert!(block.height > 0);
     }
 
+    // TODO: add mocking
     #[tokio::test]
     async fn test_get_latest_block_testnet() {
-        let block = get_latest_block(Network::Testnet).await;
+        let base_url = get_rest_provider(Network::Testnet);
+        let block = get_latest_block(base_url).await;
         assert!(block.height > 0);
     }
 
+    // TODO: add mocking
     #[tokio::test]
     async fn test_get_block_mainnet() {
-        let block = get_block(Network::Mainnet, 16705125).await;
+        let base_url = get_rest_provider(Network::Mainnet);
+        let block = get_block(base_url, 16705125).await;
         assert_eq!(block.height, 16705125, "expected a different block height");
         assert_eq!(
             block.time,
@@ -143,10 +161,12 @@ mod tests {
         );
     }
 
+    // TODO: add mocking
     #[tokio::test]
     async fn test_get_block_testnet() {
-        let block = get_block(Network::Testnet, 18182953).await;
-        assert_eq!(block.height, 18182953, "expected a different block height");
+        let base_url = get_rest_provider(Network::Testnet);
+        let block = get_block(base_url, 18500000).await;
+        assert_eq!(block.height, 18500000, "expected a different block height");
         assert_eq!(
             block.time,
             Utc.with_ymd_and_hms(2023, 10, 25, 17, 22, 23).unwrap(),
