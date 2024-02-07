@@ -45,11 +45,14 @@ pub fn choose_config() -> Result<PathBuf, InputError> {
     }
 
     // Prompt the user to select the configuration file
-    let config_file_name = Select::new(
+    //
+    // FIXME: Why does the question mark operator not work here? It doesn't register the #[from] attribute in the error enum somehow?
+    match Select::new(
         "Select configuration file", config_files,
-    ).prompt()?;
-
-    Ok(current_dir.join(config_file_name))
+    ).prompt() {
+        Ok(file) => Ok(current_dir.join(file)),
+        Err(e) => Err(InputError::UserInput(e)),
+    }
 }
 
 /// Prompts the user to select the network type used.

@@ -16,8 +16,6 @@ pub enum ProposerError {
 pub enum ValidationError {
     #[error("Home directory does not exist: {0}")]
     HomeDir(PathBuf),
-    #[error("Invalid proposal name: {0}")]
-    ProposalName(String),
     #[error("Invalid previous version: {0}")]
     PreviousVersion(String),
     #[error("Invalid target version for {0}: {1}")]
@@ -38,12 +36,10 @@ pub enum HelperError {
 
 #[derive(Error, Debug)]
 pub enum InputError {
-    #[error("Failed to get current directory: {0}")]
-    CurrentDir(#[from] std::io::Error),
     #[error("Invalid network: {0}")]
     InvalidNetwork(String),
-    #[error("Failed to list directory contents: {0}")]
-    ListDir(#[from] std::io::Error),
+    #[error("Got IO error: {0}")]
+    IO(#[from] std::io::Error),
     #[error("No configuration files found in current directory: {0}")]
     NoConfigFiles(PathBuf),
     #[error("Error during user input: {0}")]

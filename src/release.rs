@@ -193,7 +193,6 @@ mod tests {
             .await
             .expect("Failed to get asset string");
 
-        println!("assets: {}", assets);
         let expected_assets = json!({
             "binaries": {
                 "darwin/arm64" :"https://github.com/evmos/evmos/releases/download/v15.0.0/evmos_15.0.0_Darwin_arm64.tar.gz?checksum=3855eaec2fc69eafe8cff188b8ca832c2eb7d20ca3cb0f55558143a68cdc600f",
