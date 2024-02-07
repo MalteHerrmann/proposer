@@ -1,5 +1,5 @@
 use crate::{
-    block::N_BLOCKS, errors::ProposerError, helper::UpgradeHelper, inputs::get_time_string,
+    block::N_BLOCKS, errors::ProposalError, helper::UpgradeHelper, inputs::get_time_string,
     network::Network,
 };
 use handlebars::Handlebars;
@@ -7,7 +7,7 @@ use num_format::ToFormattedString;
 use serde_json::json;
 
 /// Renders the proposal template, filling in the necessary information.
-pub fn render_proposal(helper: &UpgradeHelper) -> Result<String, ProposerError> {
+pub fn render_proposal(helper: &UpgradeHelper) -> Result<String, ProposalError> {
     let mut handlebars = Handlebars::new();
     handlebars.set_strict_mode(true);
 

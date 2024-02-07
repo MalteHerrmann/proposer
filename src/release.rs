@@ -70,7 +70,7 @@ fn insert_into_assets(assets: &mut Value, key: String, url: String) {
 
 /// Returns the checksum from the release assets.
 fn get_checksum_from_assets(assets: &[Asset]) -> Option<&Asset> {
-    assets.iter().find(|asset| asset.name == "checksum.txt")
+    assets.iter().find(|asset| asset.name == "checksums.txt")
 }
 
 /// Returns the OS key from the asset name.
