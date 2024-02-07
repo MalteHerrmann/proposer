@@ -127,7 +127,6 @@ mod tests {
     use super::*;
     use crate::network::Network;
     use chrono::{Days, TimeZone};
-    use crate::network;
 
     #[tokio::test]
     async fn test_get_estimated_height() {
