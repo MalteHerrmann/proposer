@@ -157,7 +157,7 @@ pub async fn get_helper_from_inputs() -> Result<UpgradeHelper, InputError> {
 
     // Query and check the summary of the changes in the release
     let release = get_release(get_instance().as_ref(), target_version.as_str()).await?;
-    let summary = create_summary(&release)?;
+    let summary = create_summary(&release).await?;
 
     // Create an instance of the helper
     Ok(UpgradeHelper::new(

@@ -28,6 +28,6 @@ mod tests {
         );
 
         // Clean up
-        std::fs::remove_file(proposal_file_name).unwrap();
+        std::fs::remove_file(proposal_file_name).expect("failed to remove file after test");
     }
 }

@@ -2,6 +2,7 @@ use crate::network::Network;
 use chrono::{DateTime, Utc};
 use inquire::InquireError;
 use std::path::PathBuf;
+use async_openai::error::OpenAIError;
 use thiserror::Error;
 
 /// High level error type than can occur when handling the block information
@@ -71,6 +72,10 @@ pub enum InputError {
 /// Error type for failed interactions with the LLM to generate the release notes summary
 #[derive(Error, Debug)]
 pub enum SummaryError {
+    #[error("Failed to communicate with LLM: {0}")]
+    LLM(#[from] OpenAIError),
+    #[error("No summary generated")]
+    NoSummary,
     #[error("Failed to get release notes: {0}")]
     ReleaseNotes(#[from] ReleaseError),
 }
