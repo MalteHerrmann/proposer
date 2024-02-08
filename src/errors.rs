@@ -95,14 +95,16 @@ pub enum InputError {
 pub enum PrepareError {
     #[error("Failed to download checksums: {0}")]
     DownloadChecksums(#[from] reqwest::Error),
-    #[error("Failed user input: {0}")]
-    Input(#[from] InputError),
     #[error("checksum.txt not found in assets")]
     GetChecksumAsset,
     #[error("Failed to get helper: {0}")]
     GetHelper(#[from] HelperError),
     #[error("Failed to get release from GitHub: {0}")]
     GetRelease(#[from] octocrab::Error),
+    #[error("Failed user input: {0}")]
+    Input(#[from] InputError),
+    #[error("No release notes found")]
+    NoReleaseNotes,
     #[error("Failed to read proposal file: {0}")]
     ReadProposal(#[from] std::io::Error),
     #[error("Failed to render command: {0}")]

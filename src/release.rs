@@ -91,6 +91,33 @@ mod release_tests {
     }
 }
 
+/// Returns the release notes from the Release.
+pub fn get_release_notes(release: &Release) -> Result<String, PrepareError> {
+    match release.body.clone() {
+        Some(body) => Ok(body),
+        None => Err(PrepareError::NoReleaseNotes),
+    }
+}
+
+#[cfg(test)]
+mod release_notes_tests {
+    use super::*;
+
+    #[test]
+    fn test_get_release_notes_pass() {
+        let release: Release = serde_json::from_str(include_str!("testdata/release.json")).unwrap();
+        let notes = get_release_notes(&release).unwrap();
+        assert!(notes.contains("v14.0.0"));
+    }
+
+    #[test]
+    fn test_get_release_notes_fail() {
+        let release: Release = serde_json::from_str(include_str!("testdata/release_no_body.json")).unwrap();
+        let res = get_release_notes(&release);
+        assert!(res.is_err());
+    }
+}
+
 /// Returns the asset string for the release assets.
 /// The asset string is used in the Evmos CLI command.
 pub async fn get_asset_string(release: &Release) -> Result<String, PrepareError> {
