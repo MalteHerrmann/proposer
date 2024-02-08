@@ -17,6 +17,7 @@ pub fn render_proposal(helper: &UpgradeHelper) -> Result<String, ProposalError> 
 
     let height_link = get_height_with_link(helper.network, helper.upgrade_height);
     let n_blocks = N_BLOCKS.to_formatted_string(&num_format::Locale::en);
+    let upgrade_time = get_time_string(helper.upgrade_time);
 
     let data = json!({
         "author": "Malte Herrmann, Evmos Core Team",
@@ -24,7 +25,7 @@ pub fn render_proposal(helper: &UpgradeHelper) -> Result<String, ProposalError> 
             helper.previous_version,
             helper.target_version,
         ),
-        "estimated_time": get_time_string(helper.upgrade_time),
+        "estimated_time": upgrade_time,
         "features": helper.summary,
         "height": height_link,
         "name": helper.proposal_name,

@@ -6,6 +6,7 @@ pub fn write_content_to_file(
     std::fs::write(proposal_file_name, proposal)
 }
 
+#[cfg(test)]
 mod tests {
     use crate::network::Network;
     use crate::utils;
