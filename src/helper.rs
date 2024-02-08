@@ -1,11 +1,11 @@
 use crate::block::get_estimated_height;
 use crate::errors::{HelperError, InputError, ValidationError};
+use crate::llm::create_summary;
+use crate::release::{get_instance, get_release};
 use crate::{inputs, network::Network, version};
 use chrono::{DateTime, Duration, Utc};
 use std::path::{Path, PathBuf};
 use std::{fs, io};
-use crate::llm::create_summary;
-use crate::release::{get_instance, get_release};
 
 /// Contains all relevant information for the scheduled upgrade.
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
@@ -181,8 +181,14 @@ mod helper_tests {
         let previous_version = "v14.0.0";
         let target_version = "v14.0.0-rc1";
         let upgrade_time = Utc.with_ymd_and_hms(2021, 1, 1, 0, 0, 0).unwrap();
-        let helper =
-            UpgradeHelper::new(network, previous_version, target_version, upgrade_time, 60, "");
+        let helper = UpgradeHelper::new(
+            network,
+            previous_version,
+            target_version,
+            upgrade_time,
+            60,
+            "",
+        );
         assert_eq!(helper.chain_id, "evmos_9000-4");
         assert_eq!(helper.config_file_name, "proposal-Testnet-v14.0.0-rc1.json");
         assert!(

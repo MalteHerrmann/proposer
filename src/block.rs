@@ -1,8 +1,8 @@
 extern crate reqwest;
+use crate::errors::BlockError;
 use crate::{http::get_body, network::Network};
 use chrono::{DateTime, TimeZone, Utc};
 use url::Url;
-use crate::errors::BlockError;
 
 /// The number of blocks to use for the block time estimation.
 pub const N_BLOCKS: u64 = 50_000;
@@ -21,7 +21,10 @@ pub struct Block {
 }
 
 /// Gets the estimated block height for the given upgrade time.
-pub async fn get_estimated_height(network: Network, upgrade_time: DateTime<Utc>) -> Result<u64, BlockError> {
+pub async fn get_estimated_height(
+    network: Network,
+    upgrade_time: DateTime<Utc>,
+) -> Result<u64, BlockError> {
     let base_url = get_rest_provider(network);
     let block = get_latest_block(base_url.clone()).await?;
     let block_minus_n = get_block(base_url, block.height - N_BLOCKS).await?;

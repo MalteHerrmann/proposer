@@ -112,7 +112,8 @@ mod release_notes_tests {
 
     #[test]
     fn test_get_release_notes_fail() {
-        let release: Release = serde_json::from_str(include_str!("testdata/release_no_body.json")).unwrap();
+        let release: Release =
+            serde_json::from_str(include_str!("testdata/release_no_body.json")).unwrap();
         let res = get_release_notes(&release);
         assert!(res.is_err());
     }

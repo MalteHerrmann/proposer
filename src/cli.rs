@@ -45,8 +45,14 @@ pub async fn generate_command(args: GenerateCommandArgs) -> Result<(), CommandEr
 
     let upgrade_helper = get_helper_from_json(&config)?;
 
-    // Run the main functionality of the helper.
-    Ok(command::run_command_preparation(&upgrade_helper).await?)
+    // Prepare command to submit proposal
+    let command = command::prepare_command(&upgrade_helper).await?;
+
+    // Write command to file
+    Ok(utils::write_content_to_file(
+        &command,
+        &upgrade_helper.proposal_file_name.replace(".md", ".sh"),
+    )?)
 }
 
 /// Runs the logic for the `generate-proposal` sub-command.

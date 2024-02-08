@@ -1,8 +1,8 @@
 use crate::network::Network;
+use async_openai::error::OpenAIError;
 use chrono::{DateTime, Utc};
 use inquire::InquireError;
 use std::path::PathBuf;
-use async_openai::error::OpenAIError;
 use thiserror::Error;
 
 /// High level error type than can occur when handling the block information

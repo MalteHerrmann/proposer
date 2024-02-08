@@ -1,8 +1,8 @@
-use async_openai::Client;
-use async_openai::types::{ChatCompletionRequestUserMessageArgs, CreateChatCompletionRequestArgs};
-use octocrab::models::repos::Release;
 use crate::errors::SummaryError;
 use crate::release::get_release_notes;
+use async_openai::types::{ChatCompletionRequestUserMessageArgs, CreateChatCompletionRequestArgs};
+use async_openai::Client;
+use octocrab::models::repos::Release;
 
 /// The GPT-4 model name.
 /// TODO: Make this configurable via CLI flag or environment variable.
@@ -35,25 +35,27 @@ async fn prompt_for_summary(prompt: String) -> Result<String, SummaryError> {
     let request = CreateChatCompletionRequestArgs::default()
         .max_tokens(2000u16)
         .model(GPT4)
-        .messages([
-            ChatCompletionRequestUserMessageArgs::default()
-                .content(prompt)
-                .build()?
-                .into()
-        ])
+        .messages([ChatCompletionRequestUserMessageArgs::default()
+            .content(prompt)
+            .build()?
+            .into()])
         .build()?;
 
     let response = client.chat().create(request).await?;
     let choice = response.choices.first().ok_or(SummaryError::NoSummary)?;
-    let summary = choice.message.content.clone().ok_or(SummaryError::NoSummary)?;
+    let summary = choice
+        .message
+        .content
+        .clone()
+        .ok_or(SummaryError::NoSummary)?;
 
     Ok(summary)
 }
 
 #[cfg(test)]
 mod summary_tests {
-    use octocrab::models::repos::Release;
     use super::*;
+    use octocrab::models::repos::Release;
 
     #[tokio::test]
     async fn test_create_summary() {
@@ -61,9 +63,17 @@ mod summary_tests {
             .expect("failed to parse release JSON");
 
         let res = create_summary(&release).await;
-        assert!(res.is_ok(), "expected no error; got:\n{}\n", res.unwrap_err());
+        assert!(
+            res.is_ok(),
+            "expected no error; got:\n{}\n",
+            res.unwrap_err()
+        );
 
         let summary = res.unwrap();
-        assert_ne!(summary, release.body.unwrap(), "expected summary to be different from raw release notes");
+        assert_ne!(
+            summary,
+            release.body.unwrap(),
+            "expected summary to be different from raw release notes"
+        );
     }
 }
