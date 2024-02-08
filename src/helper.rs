@@ -1,5 +1,7 @@
 use crate::block::get_estimated_height;
 use crate::errors::{HelperError, InputError, ValidationError};
+use crate::llm::create_summary;
+use crate::release::{get_instance, get_release};
 use crate::{inputs, network::Network, version};
 use chrono::{DateTime, Duration, Utc};
 use std::path::{Path, PathBuf};
@@ -22,6 +24,8 @@ pub struct UpgradeHelper {
     pub proposal_name: String,
     /// The name of the proposal file.
     pub proposal_file_name: String,
+    /// The summary of the changes in the release.
+    pub summary: String,
     /// The target version to upgrade to.
     pub target_version: String,
     /// The scheduled height of the upgrade.
@@ -40,6 +44,7 @@ impl UpgradeHelper {
         target_version: &str,
         upgrade_time: DateTime<Utc>,
         upgrade_height: u64,
+        summary: &str,
     ) -> UpgradeHelper {
         let chain_id = get_chain_id(network);
         // TODO: Get from input eventually
@@ -58,6 +63,7 @@ impl UpgradeHelper {
             previous_version: previous_version.to_string(),
             proposal_name,
             proposal_file_name,
+            summary: summary.to_string(),
             target_version: target_version.to_string(),
             upgrade_height,
             upgrade_time,
@@ -149,6 +155,10 @@ pub async fn get_helper_from_inputs() -> Result<UpgradeHelper, InputError> {
     let upgrade_time = inputs::get_upgrade_time(voting_period, Utc::now())?;
     let upgrade_height = get_estimated_height(used_network, upgrade_time).await?;
 
+    // Query and check the summary of the changes in the release
+    let release = get_release(get_instance().as_ref(), target_version.as_str()).await?;
+    let summary = create_summary(&release).await?;
+
     // Create an instance of the helper
     Ok(UpgradeHelper::new(
         used_network,
@@ -156,6 +166,7 @@ pub async fn get_helper_from_inputs() -> Result<UpgradeHelper, InputError> {
         target_version.as_str(),
         upgrade_time,
         upgrade_height,
+        summary.as_str(),
     ))
 }
 
@@ -170,8 +181,14 @@ mod helper_tests {
         let previous_version = "v14.0.0";
         let target_version = "v14.0.0-rc1";
         let upgrade_time = Utc.with_ymd_and_hms(2021, 1, 1, 0, 0, 0).unwrap();
-        let helper =
-            UpgradeHelper::new(network, previous_version, target_version, upgrade_time, 60);
+        let helper = UpgradeHelper::new(
+            network,
+            previous_version,
+            target_version,
+            upgrade_time,
+            60,
+            "",
+        );
         assert_eq!(helper.chain_id, "evmos_9000-4");
         assert_eq!(helper.config_file_name, "proposal-Testnet-v14.0.0-rc1.json");
         assert!(
@@ -194,6 +211,7 @@ mod helper_tests {
             "v14.0.0-rc1",
             Utc.with_ymd_and_hms(2021, 1, 1, 0, 0, 0).unwrap(),
             upgrade_height,
+            "",
         );
 
         assert!(

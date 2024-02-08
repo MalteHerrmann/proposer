@@ -6,6 +6,7 @@ pub fn write_content_to_file(
     std::fs::write(proposal_file_name, proposal)
 }
 
+#[cfg(test)]
 mod tests {
     use crate::network::Network;
     use crate::utils;
@@ -27,6 +28,6 @@ mod tests {
         );
 
         // Clean up
-        std::fs::remove_file(proposal_file_name).unwrap();
+        std::fs::remove_file(proposal_file_name).expect("failed to remove file after test");
     }
 }

@@ -3,7 +3,7 @@
 This repository contains a helper to aid in generating the contents of Software Upgrade Proposals. It does so by
 
 - [x] Querying the release on GitHub
-- [ ] Deriving the changed features from the release notes
+- [x] Deriving the changed features from the release notes
 - [x] Calculating the block height for the desired time of upgrade
 - [x] Updating the description template
 - [ ] Creating a Commonwealth thread

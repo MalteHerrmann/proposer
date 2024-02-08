@@ -4,7 +4,9 @@
 // This file contains a helper function to set up a mock server which will return a 500 with the
 // given message.
 
+#[cfg(test)]
 use serde_json::json;
+#[cfg(test)]
 use wiremock::{
     matchers::{method, path_regex},
     Mock, MockServer, ResponseTemplate,
@@ -15,6 +17,7 @@ use wiremock::{
 // of these test failures.
 //
 // This handler should always come after your real expectations as it will match any GET request.
+#[cfg(test)]
 pub async fn setup_error_handler(mock_server: &MockServer, message: &str) {
     Mock::given(method("GET"))
         .and(path_regex(".*"))

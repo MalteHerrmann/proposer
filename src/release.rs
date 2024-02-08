@@ -1,4 +1,4 @@
-use crate::errors::PrepareError;
+use crate::errors::{PrepareError, ReleaseError};
 use crate::http::get_body;
 use octocrab::{
     models::repos::{Asset, Release},
@@ -88,6 +88,34 @@ mod release_tests {
 
         let res = get_release(&client, "invalidj.xjaf/ie").await;
         assert_eq!(res.is_err(), true);
+    }
+}
+
+/// Returns the release notes from the Release.
+pub fn get_release_notes(release: &Release) -> Result<String, ReleaseError> {
+    match release.body.clone() {
+        Some(body) => Ok(body),
+        None => Err(ReleaseError::NoReleaseNotes),
+    }
+}
+
+#[cfg(test)]
+mod release_notes_tests {
+    use super::*;
+
+    #[test]
+    fn test_get_release_notes_pass() {
+        let release: Release = serde_json::from_str(include_str!("testdata/release.json")).unwrap();
+        let notes = get_release_notes(&release).unwrap();
+        assert!(notes.contains("v14.0.0"));
+    }
+
+    #[test]
+    fn test_get_release_notes_fail() {
+        let release: Release =
+            serde_json::from_str(include_str!("testdata/release_no_body.json")).unwrap();
+        let res = get_release_notes(&release);
+        assert!(res.is_err());
     }
 }
 

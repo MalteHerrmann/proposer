@@ -5,6 +5,7 @@ mod errors;
 mod helper;
 mod http;
 mod inputs;
+mod llm;
 mod mock_error;
 mod network;
 mod proposal;

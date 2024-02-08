@@ -2,24 +2,12 @@ use crate::errors::PrepareError;
 use crate::helper::UpgradeHelper;
 use crate::network::Network;
 use crate::release::{get_asset_string, get_instance, get_release};
-use crate::utils;
 use handlebars::{no_escape, Handlebars};
 use serde_json::json;
 use std::io;
 
-/// Runs the logic to prepare the command to submit the proposal.
-pub async fn run_command_preparation(helper: &UpgradeHelper) -> Result<(), PrepareError> {
-    // Prepare command to submit proposal
-    let command = prepare_command(&helper).await?;
-
-    // Write command to file
-    utils::write_content_to_file(&command, &helper.proposal_file_name.replace(".md", ".sh"))?;
-
-    Ok(())
-}
-
 /// Prepares the command to submit the proposal using the Evmos CLI.
-async fn prepare_command(helper: &UpgradeHelper) -> Result<String, PrepareError> {
+pub async fn prepare_command(helper: &UpgradeHelper) -> Result<String, PrepareError> {
     let description = get_description_from_md(&helper.proposal_file_name)?;
     let release = get_release(&get_instance(), helper.target_version.as_str()).await?;
     let assets = get_asset_string(&release).await?;
@@ -85,7 +73,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_prepare_command() {
-        let helper = UpgradeHelper::new(Network::Testnet, "v13.0.0", "v14.0.0", Utc::now(), 60);
+        let helper = UpgradeHelper::new(Network::Testnet, "v13.0.0", "v14.0.0", Utc::now(), 60, "");
 
         // Write description to file
         let description = "This is a test proposal.";

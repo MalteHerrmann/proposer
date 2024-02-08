@@ -5,6 +5,7 @@
 ### Features
 
 - (cli) [#1](https://github.com/evmos/proposer/pull/1) Prepare CLI command to submit proposal.
+- (prop) [#17](https://github.com/evmos/proposer/pull/17) Get summary of release notes using GPT-4.
 
 ### Improvements
 
