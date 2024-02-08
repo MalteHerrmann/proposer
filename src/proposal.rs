@@ -25,7 +25,7 @@ pub fn render_proposal(helper: &UpgradeHelper) -> Result<String, ProposalError> 
             helper.target_version,
         ),
         "estimated_time": get_time_string(helper.upgrade_time),
-        "features": "- neue Features",
+        "features": helper.summary,
         "height": height_link,
         "name": helper.proposal_name,
         "n_blocks": n_blocks,
@@ -72,7 +72,7 @@ mod tests {
 
     #[test]
     fn test_render_proposal_pass() {
-        let helper = UpgradeHelper::new(Network::Mainnet, "v0.0.1", "v0.1.0", Utc::now(), 60);
+        let helper = UpgradeHelper::new(Network::Mainnet, "v0.0.1", "v0.1.0", Utc::now(), 60, "");
 
         let result = render_proposal(&helper);
         assert!(

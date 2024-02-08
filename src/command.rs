@@ -8,6 +8,7 @@ use serde_json::json;
 use std::io;
 
 /// Runs the logic to prepare the command to submit the proposal.
+/// TODO: no need for this method, just call prepare_command directly from the CLI
 pub async fn run_command_preparation(helper: &UpgradeHelper) -> Result<(), PrepareError> {
     // Prepare command to submit proposal
     let command = prepare_command(&helper).await?;
@@ -85,7 +86,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_prepare_command() {
-        let helper = UpgradeHelper::new(Network::Testnet, "v13.0.0", "v14.0.0", Utc::now(), 60);
+        let helper = UpgradeHelper::new(Network::Testnet, "v13.0.0", "v14.0.0", Utc::now(), 60, "");
 
         // Write description to file
         let description = "This is a test proposal.";

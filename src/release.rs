@@ -1,4 +1,4 @@
-use crate::errors::PrepareError;
+use crate::errors::{PrepareError, ReleaseError};
 use crate::http::get_body;
 use octocrab::{
     models::repos::{Asset, Release},
@@ -92,10 +92,10 @@ mod release_tests {
 }
 
 /// Returns the release notes from the Release.
-pub fn get_release_notes(release: &Release) -> Result<String, PrepareError> {
+pub fn get_release_notes(release: &Release) -> Result<String, ReleaseError> {
     match release.body.clone() {
         Some(body) => Ok(body),
-        None => Err(PrepareError::NoReleaseNotes),
+        None => Err(ReleaseError::NoReleaseNotes),
     }
 }
 
