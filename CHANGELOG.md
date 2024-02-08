@@ -12,7 +12,7 @@
 - (all) [#13](https://github.com/evmos/proposer/pull/13) Implement better error handling using [thiserror](https://github.com/dtolnay/thiserror).
 - (tests) [#11](https://github.com/evmos/proposer/pull/11) Mock API responses for tests.
 - (block) [#15](https://github.com/evmos/proposer/pull/15) Add error handling for blocks data.
-- (rust) [#16](https://github.com/evmos/proposer/pull/16) Adjust package name to `proposer`.
+- (crate) [#16](https://github.com/evmos/proposer/pull/16) Adjust package name to `proposer`.
 
 ## Legacy Changelog from [Original Repo](https://github.com/MalteHerrmann/upgrade-helper)
 
