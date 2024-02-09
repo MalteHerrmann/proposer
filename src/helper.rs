@@ -1,4 +1,4 @@
-use crate::block::get_estimated_height;
+use crate::block::{get_estimated_height, get_rest_provider};
 use crate::errors::{HelperError, InputError, ValidationError};
 use crate::llm::create_summary;
 use crate::release::{get_instance, get_release};
@@ -153,7 +153,8 @@ pub async fn get_helper_from_inputs() -> Result<UpgradeHelper, InputError> {
     // Query and check the upgrade time and height
     let voting_period = get_voting_period(used_network);
     let upgrade_time = inputs::get_upgrade_time(voting_period, Utc::now())?;
-    let upgrade_height = get_estimated_height(used_network, upgrade_time).await?;
+    let base_url = get_rest_provider(used_network);
+    let upgrade_height = get_estimated_height(&base_url, upgrade_time).await?;
 
     // Query and check the summary of the changes in the release
     let release = get_release(get_instance().as_ref(), target_version.as_str()).await?;
