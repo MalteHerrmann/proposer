@@ -178,18 +178,18 @@ mod tests {
 
         let template = ResponseTemplate::new(200).set_body_json(block_response);
 
-        let mock_server = setup_api(template, "16705125").await;
+        let mock_server = setup_api(template, "18500000").await;
         let mock_path =
             Url::from_str(mock_server.uri().as_str()).expect("failed to parse mock server uri");
 
-        let res = get_block(mock_path, 16705125).await;
-        assert!(res.is_ok());
+        let res = get_block(mock_path, 18500000).await;
+        assert!(res.is_ok(), "expected no error; got: {}", res.unwrap_err());
 
         let block = res.unwrap();
-        assert_eq!(block.height, 16705125, "expected a different block height");
+        assert_eq!(block.height, 18500000, "expected a different block height");
         assert_eq!(
             block.time,
-            Utc.with_ymd_and_hms(2023, 10, 25, 17, 21, 50).unwrap(),
+            Utc.with_ymd_and_hms(2023, 11, 07, 02, 41, 36).unwrap(),
             "expected a different block time",
         );
     }
