@@ -1,23 +1,46 @@
 extern crate reqwest;
+
 use crate::errors::BlockError;
 use crate::{http::get_body, network::Network};
-use chrono::{DateTime, TimeZone, Utc};
+use chrono::{DateTime, NaiveDateTime, TimeZone, Utc};
+use regex::Regex;
+use serde::{Deserialize, Serialize};
 use url::Url;
 
 /// The number of blocks to use for the block time estimation.
 pub const N_BLOCKS: u64 = 50_000;
 
 /// The REST endpoint for querying blocks.
-const BLOCKS_ENDPOINT: &str = "cosmos/base/tendermint/v1beta1/blocks/";
+const BLOCKS_ENDPOINT: &str = "/cosmos/base/tendermint/v1beta1/blocks/";
 
 /// The REST endpoint for querying the latest block.
-const LATEST_BLOCK_ENDPOINT: &str = "cosmos/base/tendermint/v1beta1/blocks/latest";
+const LATEST_BLOCK_ENDPOINT: &str = "/cosmos/base/tendermint/v1beta1/blocks/latest";
 
 /// Represents a block from the Evmos network.
 #[derive(Debug)]
 pub struct Block {
     height: u64,
     time: DateTime<Utc>,
+}
+
+/// Represents the relevant information from the block query response
+/// that is used for further processing.
+#[derive(Serialize, Deserialize)]
+struct BlockResponse {
+    block: BlockInfo,
+}
+
+/// Represents the block information from the block query response.
+#[derive(Serialize, Deserialize)]
+struct BlockInfo {
+    header: Header,
+}
+
+/// Represents the header information from the block query response.
+#[derive(Serialize, Deserialize)]
+struct Header {
+    height: String,
+    time: String,
 }
 
 /// Gets the estimated block height for the given upgrade time.
@@ -72,22 +95,17 @@ fn get_rest_provider(network: Network) -> Url {
 
 /// Processes the block body.
 fn process_block_body(body: String) -> Result<Block, BlockError> {
-    // build regex to find the block height
-    let re = regex::Regex::new(r#"height":"(\d+)","time":"([T0-9\-:]+)"#)?;
+    let body: BlockResponse = serde_json::from_str(&body)?;
 
-    let captures = match re.captures(&body) {
-        Some(c) => c,
-        None => return Err(BlockError::ParseBlock),
-    };
+    let height = body.block.header.height.parse::<u64>()?;
 
-    // Extract the block height
-    let captured_height = captures.get(1).map_or("", |m| m.as_str());
-    let height = captured_height.parse::<u64>()?;
+    let captured_time = Regex::new(r"[T0-9\-:]+")?
+        .find(&body.block.header.time)
+        .ok_or(BlockError::ParseTime)?
+        .as_str();
 
-    // Parse the block time
-    let captured_time = captures.get(2).map_or("", |m| m.as_str());
     let time_format = "%Y-%m-%dT%H:%M:%S";
-    let naive_date_time = chrono::NaiveDateTime::parse_from_str(captured_time, time_format)?;
+    let naive_date_time = NaiveDateTime::parse_from_str(captured_time, time_format)?;
     let time = Utc.from_utc_datetime(&naive_date_time);
 
     Ok(Block { height, time })
@@ -97,8 +115,32 @@ fn process_block_body(body: String) -> Result<Block, BlockError> {
 mod tests {
     use super::*;
     use crate::network::Network;
-    use chrono::{Days, TimeZone};
 
+    use chrono::{Days, TimeZone};
+    use serde_json::Value;
+    use std::str::FromStr;
+    use wiremock::matchers::{method, path};
+    use wiremock::{Mock, MockServer, ResponseTemplate};
+
+    /// Sets up a mock server to return the given response template
+    /// when receiving a GET request on the release URL.
+    /// Returns the mock server.
+    ///
+    /// This is used to mock request to the Evmos blockchain.
+    async fn setup_api(template: ResponseTemplate, endpoint: &str) -> MockServer {
+        let example_block_url = BLOCKS_ENDPOINT.to_owned() + endpoint;
+
+        let mock_server = MockServer::start().await;
+        Mock::given(method("GET"))
+            .and(path(example_block_url))
+            .respond_with(template)
+            .mount(&mock_server)
+            .await;
+
+        mock_server
+    }
+
+    // TODO: add mocking
     #[tokio::test]
     async fn test_get_estimated_height() {
         let now = Utc::now();
@@ -110,29 +152,37 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_get_latest_block_mainnet() {
-        let res = get_latest_block(get_rest_provider(Network::Mainnet)).await;
-        assert!(res.is_ok());
+    async fn test_get_latest_block_pass() {
+        let block_response: Value =
+            serde_json::from_str(include_str!("testdata/block_mainnet.json"))
+                .expect("failed to parse block JSON");
+
+        let template = ResponseTemplate::new(200).set_body_json(block_response);
+
+        let mock_server = setup_api(template, "latest").await;
+        let mock_path =
+            Url::from_str(mock_server.uri().as_str()).expect("failed to parse mock server uri");
+
+        let res = get_latest_block(mock_path).await;
+        assert!(res.is_ok(), "expected no error; got: {}", res.unwrap_err());
 
         let block = res.unwrap();
-        assert!(block.height > 0);
+        assert_eq!(block.height, 18798834, "expected different height");
     }
 
-    // TODO: add mocking
     #[tokio::test]
-    async fn test_get_latest_block_testnet() {
-        let base_url = get_rest_provider(Network::Testnet);
-        let res = get_latest_block(base_url).await;
-        assert!(res.is_ok());
-        let block = res.unwrap();
-        assert!(block.height > 0);
-    }
+    async fn test_get_block_pass() {
+        let block_response: Value =
+            serde_json::from_str(include_str!("testdata/block_testnet.json"))
+                .expect("failed to parse block JSON");
 
-    // TODO: add mocking
-    #[tokio::test]
-    async fn test_get_block_mainnet() {
-        let base_url = get_rest_provider(Network::Mainnet);
-        let res = get_block(base_url, 16705125).await;
+        let template = ResponseTemplate::new(200).set_body_json(block_response);
+
+        let mock_server = setup_api(template, "16705125").await;
+        let mock_path =
+            Url::from_str(mock_server.uri().as_str()).expect("failed to parse mock server uri");
+
+        let res = get_block(mock_path, 16705125).await;
         assert!(res.is_ok());
 
         let block = res.unwrap();
@@ -144,33 +194,18 @@ mod tests {
         );
     }
 
-    // TODO: add mocking
-    #[tokio::test]
-    async fn test_get_block_testnet() {
-        let base_url = get_rest_provider(Network::Testnet);
-        let res = get_block(base_url, 18500000).await;
-        assert!(res.is_ok());
+    #[test]
+    fn test_process_block_body_pass() {
+        let block_response = include_str!("testdata/block_testnet.json");
+
+        let res = process_block_body(block_response.to_string());
+        assert!(res.is_ok(), "expected no error; got: {}", res.unwrap_err());
 
         let block = res.unwrap();
         assert_eq!(block.height, 18500000, "expected a different block height");
         assert_eq!(
             block.time,
-            Utc.with_ymd_and_hms(2023, 10, 25, 17, 22, 23).unwrap(),
-            "expected a different block time",
-        );
-    }
-
-    #[test]
-    fn test_process_block_body_pass() {
-        let body = r#"{"block_id":{"hash":"CDHpDYu4tRibegIDTHust45sWB6ebnNE0Wq4sMpbSP8=","part_set_header":{"total":1,"hash":"bLAKlbU5Y0rqC1p07Xuhxm355sa+wPxwD9roDtnIzqA="}},"block":{"header":{"version":{"block":"11","app":"0"},"chain_id":"evmos_9001-2","height":"16699401","time":"2023-10-25T10:09:34.440526177Z","last_block_id""#;
-        let res = process_block_body(body.to_string());
-        assert!(res.is_ok());
-
-        let block = res.unwrap();
-        assert_eq!(block.height, 16699401, "expected a different block height");
-        assert_eq!(
-            block.time,
-            Utc.with_ymd_and_hms(2023, 10, 25, 10, 09, 34).unwrap(),
+            Utc.with_ymd_and_hms(2023, 11, 07, 02, 41, 36).unwrap(),
             "expected a different block time",
         );
     }
