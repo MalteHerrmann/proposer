@@ -5,6 +5,7 @@ use async_openai::Client;
 use octocrab::models::repos::Release;
 
 /// The GPT-4 model name.
+///
 /// TODO: Make this configurable via CLI flag or environment variable.
 const GPT4: &str = "gpt-4";
 

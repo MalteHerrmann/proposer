@@ -48,9 +48,7 @@ pub async fn get_estimated_height(
     base_url: &Url,
     upgrade_time: DateTime<Utc>,
 ) -> Result<u64, BlockError> {
-    println!("Get latest block");
     let block = get_latest_block(&base_url).await?;
-    println!("Get block: {}", block.height - N_BLOCKS);
     let block_minus_n = get_block(&base_url, block.height - N_BLOCKS).await?;
     let seconds_per_block: f32 =
         (block.time - block_minus_n.time).num_seconds() as f32 / N_BLOCKS as f32;
@@ -70,8 +68,6 @@ async fn get_latest_block(base_url: &Url) -> Result<Block, BlockError> {
 }
 
 /// Gets the block at the given height from the Evmos network.
-///
-/// TODO: add mocking
 async fn get_block(base_url: &Url, height: u64) -> Result<Block, BlockError> {
     // Combine the REST endpoint with the block height
     let url = base_url
@@ -128,24 +124,24 @@ mod tests {
     ///
     /// This is used to mock requests to the Evmos blockchain.
     async fn setup_mock_api() -> MockServer {
-        let latest_block: Value = serde_json::from_str(include_str!("testdata/block_mainnet_18798834.json"))
+        let latest_block: Value =
+            serde_json::from_str(include_str!("testdata/block_mainnet_18798834.json"))
                 .expect("failed to parse block JSON");
 
-        let block_minus_n: Value = serde_json::from_str(include_str!("testdata/block_mainnet_18748834.json"))
+        let block_minus_n: Value =
+            serde_json::from_str(include_str!("testdata/block_mainnet_18748834.json"))
                 .expect("failed to parse block JSON");
 
         let mock_server = MockServer::start().await;
         Mock::given(method("GET"))
             .and(path(LATEST_BLOCK_ENDPOINT))
-            .respond_with(ResponseTemplate::new(200)
-                .set_body_json(latest_block))
+            .respond_with(ResponseTemplate::new(200).set_body_json(latest_block))
             .mount(&mock_server)
             .await;
 
         Mock::given(method("GET"))
             .and(path(BLOCKS_ENDPOINT.to_owned() + "18748834"))
-            .respond_with(ResponseTemplate::new(200)
-                .set_body_json(block_minus_n))
+            .respond_with(ResponseTemplate::new(200).set_body_json(block_minus_n))
             .mount(&mock_server)
             .await;
 
@@ -155,8 +151,8 @@ mod tests {
     #[tokio::test]
     async fn test_get_estimated_height() {
         let mock_server = setup_mock_api().await;
-        let mock_path = Url::from_str(mock_server.uri().as_str())
-                .expect("failed to parse mock server uri");
+        let mock_path =
+            Url::from_str(mock_server.uri().as_str()).expect("failed to parse mock server uri");
 
         let now = Utc::now();
         let upgrade_time = now.checked_add_days(Days::new(5)).unwrap();
