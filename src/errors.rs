@@ -10,16 +10,18 @@ use thiserror::Error;
 pub enum BlockError {
     #[error("Failed to get block information: {0}")]
     GetBlock(#[from] reqwest::Error),
-    #[error("Failed to parse block body")]
-    ParseBlock,
     #[error("Failed to get parse date: {0}")]
     ParseDate(#[from] chrono::ParseError),
     #[error("Failed to parse int: {0}")]
     ParseInt(#[from] std::num::ParseIntError),
+    #[error("Failed to parse time")]
+    ParseTime,
     #[error("Failed to parse url: {0}")]
     ParseUrl(#[from] url::ParseError),
     #[error("Failed to build regex: {0}")]
     Regex(#[from] regex::Error),
+    #[error("Failed to unpack block response: {0}")]
+    UnpackResponse(#[from] serde_json::Error),
 }
 
 /// High level error type that can occur when generating the submission command
