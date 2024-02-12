@@ -99,8 +99,8 @@ fn process_block_body(body: String) -> Result<Block, BlockError> {
         .ok_or(BlockError::ParseTime)?
         .as_str();
 
-    let time_format = "%Y-%m-%dT%H:%M:%S";
-    let naive_date_time = NaiveDateTime::parse_from_str(captured_time, time_format)?;
+    const TIME_FORMAT: &str = "%Y-%m-%dT%H:%M:%S";
+    let naive_date_time = NaiveDateTime::parse_from_str(captured_time, TIME_FORMAT)?;
     let time = Utc.from_utc_datetime(&naive_date_time);
 
     Ok(Block { height, time })
