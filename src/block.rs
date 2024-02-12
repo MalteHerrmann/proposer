@@ -1,5 +1,3 @@
-extern crate reqwest;
-
 use crate::errors::BlockError;
 use crate::{http::get_body, network::Network};
 use chrono::{DateTime, NaiveDateTime, TimeZone, Utc};
