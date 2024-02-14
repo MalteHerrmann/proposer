@@ -282,3 +282,8 @@ mod tests {
         );
     }
 }
+
+/// Lets the user choose the desired key to use.
+pub fn get_key(keys: Vec<String>) -> Result<String, InputError> {
+    Ok(Select::new("Select key to submit proposal", keys).prompt()?)
+}

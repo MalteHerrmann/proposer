@@ -7,14 +7,13 @@ use serde_json::json;
 use std::io;
 
 /// Prepares the command to submit the proposal using the Evmos CLI.
-pub async fn prepare_command(helper: &UpgradeHelper) -> Result<String, PrepareError> {
+pub async fn prepare_command(helper: &UpgradeHelper, key: &str) -> Result<String, PrepareError> {
     let description = get_description_from_md(&helper.proposal_file_name)?;
     let release = get_release(&get_instance(), helper.target_version.as_str()).await?;
     let assets = get_asset_string(&release).await?;
 
     // TODO: get fees from network conditions?
     let fees = "10000000000aevmos";
-    let key = get_key(helper.network);
     let tm_rpc = get_rpc_url(helper.network);
 
     let data = json!({
@@ -47,15 +46,6 @@ fn get_description_from_md(filename: &str) -> io::Result<String> {
     std::fs::read_to_string(filename)
 }
 
-/// Returns the key used for signing based on the network.
-fn get_key(network: Network) -> String {
-    match network {
-        Network::Mainnet => "mainnet-address".to_string(),
-        Network::Testnet => "testnet-address".to_string(),
-        Network::LocalNode => "dev0".to_string(),
-    }
-}
-
 /// Returns the RPC URL based on the network.
 fn get_rpc_url(network: Network) -> String {
     match network {
@@ -80,7 +70,7 @@ mod tests {
         std::fs::write(&helper.proposal_file_name, description)
             .expect("Unable to write proposal to file");
 
-        match prepare_command(&helper).await {
+        match prepare_command(&helper, "dev0").await {
             Ok(command) => {
                 // Remove description file
                 std::fs::remove_file(&helper.proposal_file_name)
@@ -92,7 +82,7 @@ mod tests {
                 expected_command
                     .push_str(format!("--upgrade-height {} \\\n", helper.upgrade_height).as_str());
                 expected_command.push_str("--description \"This is a test proposal.\" \\\n");
-                expected_command.push_str("--from testnet-address \\\n");
+                expected_command.push_str("--from dev0 \\\n");
                 expected_command.push_str("--fees 10000000000aevmos \\\n");
                 expected_command.push_str("--gas auto \\\n");
                 expected_command.push_str("--chain-id evmos_9000-4 \\\n");
@@ -137,18 +127,6 @@ mod tests {
             description.is_err(),
             "description should be err, but is not"
         );
-    }
-
-    #[test]
-    fn test_get_key() {
-        let key = get_key(Network::Mainnet);
-        assert_eq!(key, "mainnet-address", "key does not match");
-
-        let key = get_key(Network::Testnet);
-        assert_eq!(key, "testnet-address", "key does not match");
-
-        let key = get_key(Network::LocalNode);
-        assert_eq!(key, "dev0", "key does not match");
     }
 
     #[test]

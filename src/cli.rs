@@ -2,7 +2,7 @@ use crate::{
     command,
     errors::{CommandError, ProposalError},
     helper::{get_helper_from_inputs, get_helper_from_json},
-    inputs, proposal, utils,
+    inputs, keys, proposal, utils,
 };
 use clap::{Args, Parser, Subcommand};
 use std::path::PathBuf;
@@ -45,8 +45,11 @@ pub async fn generate_command(args: GenerateCommandArgs) -> Result<(), CommandEr
 
     let upgrade_helper = get_helper_from_json(&config)?;
 
+    let keys_with_balances = keys::get_keys_with_balances(&upgrade_helper.network).await?;
+    let key = inputs::get_key(keys_with_balances)?;
+
     // Prepare command to submit proposal
-    let command = command::prepare_command(&upgrade_helper).await?;
+    let command = command::prepare_command(&upgrade_helper, &key).await?;
 
     // Write command to file
     Ok(utils::write_content_to_file(

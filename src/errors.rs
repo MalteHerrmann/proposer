@@ -3,6 +3,7 @@ use async_openai::error::OpenAIError;
 use chrono::{DateTime, Utc};
 use inquire::InquireError;
 use std::path::PathBuf;
+use std::string::FromUtf8Error;
 use thiserror::Error;
 
 /// High level error type than can occur when handling the block information
@@ -31,6 +32,8 @@ pub enum CommandError {
     GetHelper(#[from] HelperError),
     #[error("Failed to get user input: {0}")]
     Input(#[from] InputError),
+    #[error("Failed to get key: {0}")]
+    Key(#[from] KeysError),
     #[error("Failed to prepare command: {0}")]
     Prepare(#[from] PrepareError),
     #[error("Failed to render command: {0}")]
@@ -69,6 +72,29 @@ pub enum InputError {
     UserInput(#[from] InquireError),
     #[error("Failed to validate input: {0}")]
     Validate(#[from] ValidationError),
+}
+
+/// Error type for failed operations regarding keys
+#[derive(Error, Debug)]
+pub enum KeysError {
+    #[error("Failed to get address for key: {0}")]
+    AddressFromKey(String),
+    #[error("Failed to execute CLI command: {0}")]
+    CLICommand(#[from] std::io::Error),
+    #[error("Failed to get balance: {0}")]
+    GetBalance(#[from] reqwest::Error),
+    #[error("Failed to get keys from keyring: {0}")]
+    GetKeys(#[from] InputError),
+    #[error("Failed to get home dir")]
+    HomeDir,
+    #[error("No keys with balance found")]
+    NoKeysWithBalance,
+    #[error("Failed to convert bytes to string: {0}")]
+    OutputConversion(#[from] FromUtf8Error),
+    #[error("Failed to parse url: {0}")]
+    ParseUrl(#[from] url::ParseError),
+    #[error("Failed to unpack balance response: {0}")]
+    UnpackResponse(#[from] serde_json::Error),
 }
 
 /// Error type for failed interactions with the LLM to generate the release notes summary
