@@ -2,8 +2,9 @@ use crate::{
     command,
     errors::{CommandError, ProposalError},
     helper::{get_helper_from_inputs, get_helper_from_json},
-    inputs, proposal, utils,
+    inputs,
     llm::OpenAIModel,
+    proposal, utils,
 };
 use clap::{Args, Parser, Subcommand};
 use std::path::PathBuf;

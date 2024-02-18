@@ -1,10 +1,10 @@
-use std::fmt::Display;
 use crate::errors::SummaryError;
 use crate::release::get_release_notes;
 use async_openai::types::{ChatCompletionRequestUserMessageArgs, CreateChatCompletionRequestArgs};
 use async_openai::Client;
 use clap::ValueEnum;
 use octocrab::models::repos::Release;
+use std::fmt::Display;
 
 /// The used OpenAI model.
 #[derive(Debug, Clone, Copy, ValueEnum)]
