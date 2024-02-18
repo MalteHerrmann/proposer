@@ -7,10 +7,9 @@ use clap::ValueEnum;
 use octocrab::models::repos::Release;
 
 /// The used OpenAI model.
-#[derive(Debug, Clone, Copy, ValueEnum, Default)]
+#[derive(Debug, Clone, Copy, ValueEnum)]
 pub enum OpenAIModel {
     GPT3_5,
-    #[default]
     GPT4,
 }
 
