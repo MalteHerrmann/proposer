@@ -24,8 +24,8 @@ use crate::cli::{SubCommand, CLI};
 #[tokio::main]
 async fn main() {
     match CLI::parse().subcmd {
-        SubCommand::GenerateProposal => {
-            if let Err(e) = cli::generate_proposal().await {
+        SubCommand::GenerateProposal(args) => {
+            if let Err(e) = cli::generate_proposal(args).await {
                 println!("Error generating proposal: {}", e);
                 process::exit(1);
             };

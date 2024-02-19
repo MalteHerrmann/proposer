@@ -2,18 +2,32 @@ use crate::errors::SummaryError;
 use crate::release::get_release_notes;
 use async_openai::types::{ChatCompletionRequestUserMessageArgs, CreateChatCompletionRequestArgs};
 use async_openai::Client;
+use clap::ValueEnum;
 use octocrab::models::repos::Release;
+use std::fmt::Display;
 
-/// The GPT-4 model name.
-///
-/// TODO: Make this configurable via CLI flag or environment variable.
-const GPT4: &str = "gpt-4";
+/// The used OpenAI model.
+#[derive(Debug, Clone, Copy, ValueEnum)]
+pub enum OpenAIModel {
+    GPT3_5,
+    GPT4,
+}
+
+impl Display for OpenAIModel {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let str = match self {
+            OpenAIModel::GPT3_5 => "gpt-3.5-turbo",
+            OpenAIModel::GPT4 => "gpt-4",
+        };
+        write!(f, "{}", str)
+    }
+}
 
 /// Creates the summary for the release notes by querying the LLM.
-pub async fn create_summary(release: &Release) -> Result<String, SummaryError> {
+pub async fn create_summary(release: &Release, model: OpenAIModel) -> Result<String, SummaryError> {
     let notes = get_release_notes(release)?;
     let summary_prompt = build_summary_prompt(notes.as_str());
-    prompt_for_summary(summary_prompt).await
+    prompt_for_summary(summary_prompt, model).await
 }
 
 /// Builds the prompt for the LLM to generate the release notes summary.
@@ -30,12 +44,12 @@ fn build_summary_prompt(release_notes: &str) -> String {
 }
 
 /// Prompts the LLM to get the summary for the release notes.
-async fn prompt_for_summary(prompt: String) -> Result<String, SummaryError> {
+async fn prompt_for_summary(prompt: String, model: OpenAIModel) -> Result<String, SummaryError> {
     let client = Client::new();
 
     let request = CreateChatCompletionRequestArgs::default()
         .max_tokens(2000u16)
-        .model(GPT4)
+        .model(model.to_string())
         .messages([ChatCompletionRequestUserMessageArgs::default()
             .content(prompt)
             .build()?
@@ -63,7 +77,7 @@ mod summary_tests {
         let release: Release = serde_json::from_str(include_str!("testdata/release.json"))
             .expect("failed to parse release JSON");
 
-        let res = create_summary(&release).await;
+        let res = create_summary(&release, OpenAIModel::GPT3_5).await;
         assert!(
             res.is_ok(),
             "expected no error; got:\n{}\n",
