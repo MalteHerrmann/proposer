@@ -1,6 +1,6 @@
 use crate::{balance, block::get_rest_provider, errors::KeysError, network::Network};
-use std::{process};
 use serde::{Deserialize, Serialize};
+use std::process;
 
 /// Represents a key with its name and address.
 #[derive(Debug, Deserialize, Serialize)]
@@ -77,8 +77,13 @@ mod tests {
 
         let keys = res.unwrap();
         assert_eq!(keys.len(), 2, "expected two keys");
-        assert_eq!(keys[0].address, "evmos12ly0g0dj6amk5uch77mz7d022h3sd10enf4ln9");
-        assert_eq!(keys[1].address, "evmos1k0sx0f62383ufue5gn6xth029wut0twut294fw");
+        assert_eq!(
+            keys[0].address,
+            "evmos12ly0g0dj6amk5uch77mz7d022h3sd10enf4ln9"
+        );
+        assert_eq!(
+            keys[1].address,
+            "evmos1k0sx0f62383ufue5gn6xth029wut0twut294fw"
+        );
     }
 }
-
