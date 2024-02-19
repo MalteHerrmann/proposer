@@ -77,16 +77,12 @@ pub enum InputError {
 /// Error type for failed operations regarding keys
 #[derive(Error, Debug)]
 pub enum KeysError {
-    #[error("Failed to get address for key: {0}")]
-    AddressFromKey(String),
     #[error("Failed to execute CLI command: {0}")]
     CLICommand(#[from] std::io::Error),
     #[error("Failed to get balance: {0}")]
     GetBalance(#[from] reqwest::Error),
     #[error("Failed to get keys from keyring: {0}")]
     GetKeys(#[from] InputError),
-    #[error("Failed to get home dir")]
-    HomeDir,
     #[error("No keys with balance found")]
     NoKeysWithBalance,
     #[error("Failed to convert bytes to string: {0}")]
