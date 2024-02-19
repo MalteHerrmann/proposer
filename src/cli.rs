@@ -2,7 +2,9 @@ use crate::{
     command,
     errors::{CommandError, ProposalError},
     helper::{get_helper_from_inputs, get_helper_from_json},
-    inputs, proposal, utils,
+    inputs,
+    llm::OpenAIModel,
+    proposal, utils,
 };
 use clap::{Args, Parser, Subcommand};
 use std::path::PathBuf;
@@ -21,9 +23,17 @@ pub struct CLI {
 #[derive(Debug, Subcommand)]
 pub enum SubCommand {
     /// The `generate-proposal` sub-command.
-    GenerateProposal,
+    GenerateProposal(GenerateProposalArgs),
     /// The `generate-command` sub-command, which has an optional file path argument.
     GenerateCommand(GenerateCommandArgs),
+}
+
+/// This struct defines the pattern of the arguments for the `generate-proposal` sub-command.
+#[derive(Debug, Clone, Args)]
+pub struct GenerateProposalArgs {
+    /// The LLM model to use for summarizing the release notes.
+    #[clap(short, long, default_value_t = OpenAIModel::GPT4)]
+    model: OpenAIModel,
 }
 
 /// This struct defines the pattern of the arguments for the `generate-command` sub-command.
@@ -59,9 +69,9 @@ pub async fn generate_command(args: GenerateCommandArgs) -> Result<(), CommandEr
 ///
 /// This sub-command queries the user for the necessary information to prepare the proposal description
 /// for a standard Evmos software upgrade.
-pub async fn generate_proposal() -> Result<(), ProposalError> {
+pub async fn generate_proposal(args: GenerateProposalArgs) -> Result<(), ProposalError> {
     // Create an instance of the helper
-    let upgrade_helper = get_helper_from_inputs().await?;
+    let upgrade_helper = get_helper_from_inputs(args.model).await?;
 
     // Validate the helper configuration
     upgrade_helper.validate()?;

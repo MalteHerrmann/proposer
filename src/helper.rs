@@ -1,6 +1,6 @@
 use crate::block::{get_estimated_height, get_rest_provider};
 use crate::errors::{HelperError, InputError, ValidationError};
-use crate::llm::create_summary;
+use crate::llm::{create_summary, OpenAIModel};
 use crate::release::{get_instance, get_release};
 use crate::{inputs, network::Network, version};
 use chrono::{DateTime, Duration, Utc};
@@ -128,7 +128,7 @@ pub fn get_helper_from_json(path: &Path) -> Result<UpgradeHelper, HelperError> {
 }
 
 /// Creates a new instance of the upgrade helper based on querying the user for the necessary input.
-pub async fn get_helper_from_inputs() -> Result<UpgradeHelper, InputError> {
+pub async fn get_helper_from_inputs(model: OpenAIModel) -> Result<UpgradeHelper, InputError> {
     // Query and check the network to use
     let used_network = inputs::get_used_network()?;
 
@@ -158,7 +158,7 @@ pub async fn get_helper_from_inputs() -> Result<UpgradeHelper, InputError> {
 
     // Query and check the summary of the changes in the release
     let release = get_release(get_instance().as_ref(), target_version.as_str()).await?;
-    let summary = create_summary(&release).await?;
+    let summary = create_summary(&release, model).await?;
 
     // Create an instance of the helper
     Ok(UpgradeHelper::new(
