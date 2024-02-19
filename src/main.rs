@@ -1,3 +1,4 @@
+mod balance;
 mod block;
 mod cli;
 mod command;
@@ -5,6 +6,7 @@ mod errors;
 mod helper;
 mod http;
 mod inputs;
+mod keys;
 mod llm;
 mod mock_error;
 mod network;
