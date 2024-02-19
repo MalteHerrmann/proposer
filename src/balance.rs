@@ -1,8 +1,8 @@
-use serde::{Deserialize, Serialize};
-use url::Url;
 use crate::errors::KeysError;
 use crate::http::get_body;
 use crate::network::{get_denom, Network};
+use serde::{Deserialize, Serialize};
+use url::Url;
 
 const BALANCES_ENDPOINT: &str = "cosmos/bank/v1beta1/balances/";
 
@@ -20,7 +20,11 @@ struct Balance {
 }
 
 /// Checks if a given address has a non-zero balance on the given network.
-pub async fn has_balance(address: &str, network: &Network, base_url: &Url) -> Result<bool, KeysError> {
+pub async fn has_balance(
+    address: &str,
+    network: &Network,
+    base_url: &Url,
+) -> Result<bool, KeysError> {
     let native_denom = get_denom(*network);
     let balances_endpoint = base_url
         .join(BALANCES_ENDPOINT)?
@@ -33,7 +37,7 @@ pub async fn has_balance(address: &str, network: &Network, base_url: &Url) -> Re
 }
 
 #[cfg(test)]
-mod balances_test {
+mod tests {
     use super::*;
     use crate::network::Network;
     use serde_json::Value;
@@ -56,8 +60,7 @@ mod balances_test {
         let mock_server = MockServer::start().await;
         Mock::given(method("GET"))
             .and(path(
-                BALANCES_ENDPOINT.to_owned()
-                    + format!("{}/by_denom", TEST_ADDRESS).as_str(),
+                BALANCES_ENDPOINT.to_owned() + format!("{}/by_denom", TEST_ADDRESS).as_str(),
             ))
             .and(query_param("denom", "aevmos"))
             .respond_with(ResponseTemplate::new(200).set_body_json(balance_response))

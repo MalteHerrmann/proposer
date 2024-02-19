@@ -2,8 +2,7 @@ use crate::{
     command,
     errors::{CommandError, ProposalError},
     helper::{get_helper_from_inputs, get_helper_from_json},
-    inputs,
-    keys,
+    inputs, keys,
     llm::OpenAIModel,
     proposal, utils,
 };

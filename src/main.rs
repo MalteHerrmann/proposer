@@ -1,3 +1,4 @@
+mod balance;
 mod block;
 mod cli;
 mod command;
@@ -13,7 +14,6 @@ mod proposal;
 mod release;
 mod utils;
 mod version;
-mod balance;
 
 use clap::Parser;
 use std::process; // NOTE: needs to be imported for Cli::parse() to work

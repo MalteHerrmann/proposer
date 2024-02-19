@@ -155,6 +155,11 @@ pub fn get_time_string(time: DateTime<Utc>) -> String {
     )
 }
 
+/// Lets the user choose the desired key to use.
+pub fn get_key(keys: Vec<String>) -> Result<String, InputError> {
+    Ok(Select::new("Select key to submit proposal", keys).prompt()?)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -281,9 +286,4 @@ mod tests {
             "expected different time string",
         );
     }
-}
-
-/// Lets the user choose the desired key to use.
-pub fn get_key(keys: Vec<String>) -> Result<String, InputError> {
-    Ok(Select::new("Select key to submit proposal", keys).prompt()?)
 }
