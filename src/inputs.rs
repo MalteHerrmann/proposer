@@ -1,11 +1,9 @@
-use crate::errors::InputError;
-use crate::network::Network;
+use crate::{errors::InputError, network::Network};
 use chrono::{
     DateTime, Datelike, Duration, NaiveDateTime, NaiveTime, TimeZone, Timelike, Utc, Weekday,
 };
 use inquire::{DateSelect, Select};
-use std::path::PathBuf;
-use std::{fs, ops::Add};
+use std::{fs, ops::Add, path::PathBuf};
 
 const MONTHS: [&str; 13] = [
     "",
@@ -64,6 +62,8 @@ pub fn get_used_network() -> Result<Network, InputError> {
     let network_options = vec!["Local Node", "Testnet", "Mainnet"];
     let chosen_network = Select::new("Select network", network_options).prompt()?;
 
+    // TODO: improve handling here! Should be more elegant to reverse the print stuff from the Network
+    // type.
     let used_network = match chosen_network {
         "Local Node" => Network::LocalNode,
         "Testnet" => Network::Testnet,
@@ -72,10 +72,28 @@ pub fn get_used_network() -> Result<Network, InputError> {
             return Err(InputError::InvalidNetwork(chosen_network.to_string()));
         }
     };
+
     Ok(used_network)
 }
 
-/// Prompts the user to input the target version to upgrade to.
+/// Prompts the user to input the duration of the voting period.
+/// The duration is given in hours.
+pub fn get_evmosd_home(network: &Network) -> Result<PathBuf, InputError> {
+    let mut default_path = dirs::home_dir().expect("failed to get home directory");
+
+    match network {
+        Network::LocalNode => &default_path.push(".tmp-evmosd"),
+        _ => &default_path.push(".evmosd"),
+    };
+
+    let selected_option = inquire::Text::new("Enter the home path to your Evmos keyring")
+        .with_default(default_path.as_os_str().to_str().unwrap())
+        .prompt()?;
+
+    Ok(PathBuf::from(selected_option))
+}
+
+/// Prompts the user to input some plain text.
 pub fn get_text(prompt: &str) -> Result<String, InputError> {
     Ok(inquire::Text::new(prompt).prompt()?)
 }

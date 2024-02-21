@@ -70,10 +70,19 @@ fn get_release_md_link(version: &str) -> String {
 mod tests {
     use super::*;
     use chrono::Utc;
+    use std::path::PathBuf;
 
     #[test]
     fn test_render_proposal_pass() {
-        let helper = UpgradeHelper::new(Network::Mainnet, "v0.0.1", "v0.1.0", Utc::now(), 60, "");
+        let helper = UpgradeHelper::new(
+            PathBuf::from("./.evmosd"),
+            Network::Mainnet,
+            "v0.0.1",
+            "v0.1.0",
+            Utc::now(),
+            60,
+            "",
+        );
 
         let result = render_proposal(&helper);
         assert!(

@@ -14,8 +14,8 @@ pub struct UpgradeHelper {
     pub chain_id: String,
     /// The name of the config file.
     pub config_file_name: String,
-    /// The home directory of the node.
-    pub home: PathBuf,
+    /// The home directory of the Evmos binary.
+    pub evmosd_home: PathBuf,
     /// The network to create the commands and proposal description for.
     pub network: Network,
     /// The previous version to upgrade from.
@@ -39,6 +39,7 @@ pub struct UpgradeHelper {
 impl UpgradeHelper {
     /// Creates a new instance of the upgrade helper.
     pub fn new(
+        evmosd_home: PathBuf,
         network: Network,
         previous_version: &str,
         target_version: &str,
@@ -47,9 +48,6 @@ impl UpgradeHelper {
         summary: &str,
     ) -> UpgradeHelper {
         let chain_id = get_chain_id(network);
-        // TODO: Get from input eventually
-        let home = get_home(network);
-
         let proposal_name = format!("Evmos {} {} Upgrade", network, target_version);
         let voting_period = get_voting_period(network);
         let proposal_file_name = format!("proposal-{}-{}.md", network, target_version);
@@ -58,7 +56,7 @@ impl UpgradeHelper {
         UpgradeHelper {
             chain_id,
             config_file_name,
-            home,
+            evmosd_home,
             network,
             previous_version: previous_version.to_string(),
             proposal_name,
@@ -95,8 +93,8 @@ impl UpgradeHelper {
         }
 
         // Check if home folder exists
-        if !path_exists(&self.home) {
-            return Err(ValidationError::HomeDir(self.home.clone()));
+        if !path_exists(&self.evmosd_home) {
+            return Err(ValidationError::HomeDir(self.evmosd_home.clone()));
         }
 
         Ok(())
@@ -160,8 +158,12 @@ pub async fn get_helper_from_inputs(model: OpenAIModel) -> Result<UpgradeHelper,
     let release = get_release(get_instance().as_ref(), target_version.as_str()).await?;
     let summary = create_summary(&release, model).await?;
 
+    // Get the used home directory for the Evmos binary.
+    let evmosd_home = inputs::get_evmosd_home(&used_network)?;
+
     // Create an instance of the helper
     Ok(UpgradeHelper::new(
+        evmosd_home,
         used_network,
         previous_version.as_str(),
         target_version.as_str(),
@@ -178,11 +180,13 @@ mod helper_tests {
 
     #[test]
     fn test_new_upgrade_helper() {
+        let home = PathBuf::from("./.evmosd");
         let network = Network::Testnet;
         let previous_version = "v14.0.0";
         let target_version = "v14.0.0-rc1";
         let upgrade_time = Utc.with_ymd_and_hms(2021, 1, 1, 0, 0, 0).unwrap();
         let helper = UpgradeHelper::new(
+            home,
             network,
             previous_version,
             target_version,
@@ -193,7 +197,7 @@ mod helper_tests {
         assert_eq!(helper.chain_id, "evmos_9000-4");
         assert_eq!(helper.config_file_name, "proposal-Testnet-v14.0.0-rc1.json");
         assert!(
-            helper.home.to_str().unwrap().contains(".evmosd"),
+            helper.evmosd_home.to_str().unwrap().contains(".evmosd"),
             "expected different home directory"
         );
         assert_eq!(helper.network, Network::Testnet);
@@ -207,6 +211,7 @@ mod helper_tests {
     fn test_write_to_json_and_read_from_json() {
         let upgrade_height = 60;
         let helper = UpgradeHelper::new(
+            PathBuf::from("./.evmosd"),
             Network::Testnet,
             "v14.0.0",
             "v14.0.0-rc1",
@@ -273,18 +278,6 @@ pub fn get_voting_period(network: Network) -> Duration {
         Network::Testnet => Duration::hours(12),
         Network::Mainnet => Duration::hours(120),
     }
-}
-
-/// Returns the home directory based on the network.
-fn get_home(network: Network) -> PathBuf {
-    // home dir of user
-    let mut user_home = dirs::home_dir().expect("Failed to get home directory");
-    match network {
-        Network::LocalNode => user_home.push(".tmp-evmosd"),
-        Network::Testnet => user_home.push(".evmosd"),
-        Network::Mainnet => user_home.push(".evmosd"),
-    }
-    user_home
 }
 
 /// Returns the chain ID based on the network.

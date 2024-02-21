@@ -22,7 +22,7 @@ pub async fn prepare_command(helper: &UpgradeHelper, key: &str) -> Result<String
         "description": description.replace("\n", "\\n"),  // NOTE: this is necessary to not print the actual new lines when rendering the template.
         "fees": fees,
         "height": helper.upgrade_height,
-        "home": helper.home,
+        "home": helper.evmosd_home,
         "key": key,
         "title": helper.proposal_name,
         "tm_rpc": tm_rpc,
@@ -60,10 +60,19 @@ mod tests {
     use super::*;
     use crate::network::Network;
     use chrono::Utc;
+    use std::path::PathBuf;
 
     #[tokio::test]
     async fn test_prepare_command() {
-        let helper = UpgradeHelper::new(Network::Testnet, "v13.0.0", "v14.0.0", Utc::now(), 60, "");
+        let helper = UpgradeHelper::new(
+            PathBuf::from("./.evmosd"),
+            Network::Testnet,
+            "v13.0.0",
+            "v14.0.0",
+            Utc::now(),
+            60,
+            "",
+        );
 
         // Write description to file
         let description = "This is a test proposal.";
@@ -90,7 +99,7 @@ mod tests {
                     format!(
                         "--home {} \\\n",
                         helper
-                            .home
+                            .evmosd_home
                             .as_os_str()
                             .to_str()
                             .expect("failed to get home directory as str")
