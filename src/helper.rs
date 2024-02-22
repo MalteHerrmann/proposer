@@ -2,7 +2,7 @@ use crate::block::{get_estimated_height, get_rest_provider};
 use crate::errors::{HelperError, InputError, ValidationError};
 use crate::llm::{create_summary, OpenAIModel};
 use crate::release::{get_instance, get_release};
-use crate::{inputs, network::Network, version};
+use crate::{evmosd, inputs, network::Network, version};
 use chrono::{DateTime, Duration, Utc};
 use std::path::{Path, PathBuf};
 use std::{fs, io};
@@ -96,6 +96,9 @@ impl UpgradeHelper {
         if !path_exists(&self.evmosd_home) {
             return Err(ValidationError::HomeDir(self.evmosd_home.clone()));
         }
+
+        // Check if the home folder contains the client configuration
+        evmosd::get_client_config(&self.evmosd_home.join("config/client.toml"))?;
 
         Ok(())
     }
