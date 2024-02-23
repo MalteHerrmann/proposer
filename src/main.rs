@@ -3,6 +3,7 @@ mod block;
 mod cli;
 mod command;
 mod errors;
+mod evmosd;
 mod helper;
 mod http;
 mod inputs;

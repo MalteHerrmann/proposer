@@ -17,6 +17,7 @@
 - (block) [#15](https://github.com/evmos/proposer/pull/15) Add error handling for blocks data.
 - (crate) [#16](https://github.com/evmos/proposer/pull/16) Adjust package name to `proposer`.
 - (prop) [#22](https://github.com/evmos/proposer/pull/22) Choose GPT model via CLI flag.
+- (prop) [#23](https://github.com/evmos/proposer/pull/23) Get keyring location from user input.
 
 ## Legacy Changelog from [Original Repo](https://github.com/MalteHerrmann/upgrade-helper)
 

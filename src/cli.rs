@@ -1,3 +1,4 @@
+use crate::evmosd::get_client_config;
 use crate::{
     command,
     errors::{CommandError, ProposalError},
@@ -48,18 +49,29 @@ pub struct GenerateCommandArgs {
 
 /// Runs the logic for the `generate-command` sub-command.
 pub async fn generate_command(args: GenerateCommandArgs) -> Result<(), CommandError> {
-    let config = match args.config {
+    let helper_config_path = match args.config {
         Some(config_file_name) => config_file_name,
         None => inputs::choose_config()?, // NOTE: if no config file is provided, prompt the user to choose one
     };
 
-    let upgrade_helper = get_helper_from_json(&config)?;
+    let upgrade_helper = get_helper_from_json(&helper_config_path)?;
+    let client_config = get_client_config(
+        &upgrade_helper
+            .evmosd_home
+            .join("config/client.toml")
+            .as_path(),
+    )?;
 
-    let keys_with_balances = keys::get_keys_with_balances(&upgrade_helper.network).await?;
+    let keys_with_balances = keys::get_keys_with_balances(keys::FilterKeysConfig {
+        config: client_config.clone(),
+        home: upgrade_helper.evmosd_home.clone(),
+        network: upgrade_helper.network,
+    })
+    .await?;
     let key = inputs::get_key(keys_with_balances)?;
 
     // Prepare command to submit proposal
-    let command = command::prepare_command(&upgrade_helper, &key).await?;
+    let command = command::prepare_command(&upgrade_helper, &client_config, &key).await?;
 
     // Write command to file
     Ok(utils::write_content_to_file(

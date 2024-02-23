@@ -1,4 +1,5 @@
 use crate::errors::PrepareError;
+use crate::evmosd::ClientConfig;
 use crate::helper::UpgradeHelper;
 use crate::network::Network;
 use crate::release::{get_asset_string, get_instance, get_release};
@@ -7,7 +8,11 @@ use serde_json::json;
 use std::io;
 
 /// Prepares the command to submit the proposal using the Evmos CLI.
-pub async fn prepare_command(helper: &UpgradeHelper, key: &str) -> Result<String, PrepareError> {
+pub async fn prepare_command(
+    helper: &UpgradeHelper,
+    client_config: &ClientConfig,
+    key: &str,
+) -> Result<String, PrepareError> {
     let description = get_description_from_md(&helper.proposal_file_name)?;
     let release = get_release(&get_instance(), helper.target_version.as_str()).await?;
     let assets = get_asset_string(&release).await?;
@@ -22,8 +27,9 @@ pub async fn prepare_command(helper: &UpgradeHelper, key: &str) -> Result<String
         "description": description.replace("\n", "\\n"),  // NOTE: this is necessary to not print the actual new lines when rendering the template.
         "fees": fees,
         "height": helper.upgrade_height,
-        "home": helper.home,
+        "home": helper.evmosd_home,
         "key": key,
+        "keyring": client_config.keyring_backend,
         "title": helper.proposal_name,
         "tm_rpc": tm_rpc,
         "version": helper.target_version,
@@ -60,17 +66,34 @@ mod tests {
     use super::*;
     use crate::network::Network;
     use chrono::Utc;
+    use std::path::PathBuf;
 
     #[tokio::test]
     async fn test_prepare_command() {
-        let helper = UpgradeHelper::new(Network::Testnet, "v13.0.0", "v14.0.0", Utc::now(), 60, "");
+        let helper = UpgradeHelper::new(
+            PathBuf::from("./.evmosd"),
+            Network::Testnet,
+            "v13.0.0",
+            "v14.0.0",
+            Utc::now(),
+            60,
+            "",
+        );
+
+        let client_config = ClientConfig {
+            chain_id: "evmos_9000-4".to_string(),
+            keyring_backend: "test".to_string(),
+            output: "text".to_string(),
+            node: "https://tm.evmos-testnet.lava.build:26657".to_string(),
+            broadcast_mode: "sync".to_string(),
+        };
 
         // Write description to file
         let description = "This is a test proposal.";
         std::fs::write(&helper.proposal_file_name, description)
             .expect("Unable to write proposal to file");
 
-        match prepare_command(&helper, "dev0").await {
+        match prepare_command(&helper, &client_config, "dev0").await {
             Ok(command) => {
                 // Remove description file
                 std::fs::remove_file(&helper.proposal_file_name)
@@ -82,6 +105,7 @@ mod tests {
                 expected_command
                     .push_str(format!("--upgrade-height {} \\\n", helper.upgrade_height).as_str());
                 expected_command.push_str("--description \"This is a test proposal.\" \\\n");
+                expected_command.push_str("--keyring-backend test \\\n");
                 expected_command.push_str("--from dev0 \\\n");
                 expected_command.push_str("--fees 10000000000aevmos \\\n");
                 expected_command.push_str("--gas auto \\\n");
@@ -90,7 +114,7 @@ mod tests {
                     format!(
                         "--home {} \\\n",
                         helper
-                            .home
+                            .evmosd_home
                             .as_os_str()
                             .to_str()
                             .expect("failed to get home directory as str")

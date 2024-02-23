@@ -28,6 +28,8 @@ pub enum BlockError {
 /// High level error type that can occur when generating the submission command
 #[derive(Error, Debug)]
 pub enum CommandError {
+    #[error("Failed to get client configuration: {0}")]
+    ClientConfig(#[from] ConfigError),
     #[error("Failed to get helper: {0}")]
     GetHelper(#[from] HelperError),
     #[error("Failed to get user input: {0}")]
@@ -40,6 +42,15 @@ pub enum CommandError {
     Render(#[from] handlebars::RenderError),
     #[error("Failed to write to file: {0}")]
     Write(#[from] std::io::Error),
+}
+
+/// Error type for failed parsing of the client configuration
+#[derive(Error, Debug)]
+pub enum ConfigError {
+    #[error("Failed to read from file: {0}")]
+    Read(#[from] std::io::Error),
+    #[error("Failed to parse toml: {0}")]
+    Parse(#[from] toml::de::Error),
 }
 
 /// Error type for failed helper operations
@@ -150,6 +161,8 @@ pub enum ReleaseError {
 /// Error type for failed validations
 #[derive(Error, Debug)]
 pub enum ValidationError {
+    #[error("Failed to validate client configuration: {0}")]
+    ClientConfig(#[from] ConfigError),
     #[error("Home directory does not exist: {0}")]
     HomeDir(PathBuf),
     #[error("Invalid previous version: {0}")]
