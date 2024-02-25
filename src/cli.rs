@@ -1,6 +1,7 @@
 use crate::evmosd::get_client_config;
 use crate::{
     command,
+    commonwealth::check_commonwealth_link,
     errors::{CommandError, ProposalError},
     helper::{get_helper_from_inputs, get_helper_from_json},
     inputs, keys,
@@ -62,6 +63,9 @@ pub async fn generate_command(args: GenerateCommandArgs) -> Result<(), CommandEr
             .as_path(),
     )?;
 
+    let commonwealth_link = inputs::choose_commonwealth_link().await?;
+    check_commonwealth_link(&commonwealth_link, &upgrade_helper).await?;
+
     let keys_with_balances = keys::get_keys_with_balances(keys::FilterKeysConfig {
         config: client_config.clone(),
         home: upgrade_helper.evmosd_home.clone(),
@@ -71,7 +75,13 @@ pub async fn generate_command(args: GenerateCommandArgs) -> Result<(), CommandEr
     let key = inputs::get_key(keys_with_balances)?;
 
     // Prepare command to submit proposal
-    let command = command::prepare_command(&upgrade_helper, &client_config, &key).await?;
+    let command = command::prepare_command(
+        &upgrade_helper,
+        &client_config,
+        &key,
+        commonwealth_link.as_str(),
+    )
+    .await?;
 
     // Write command to file
     Ok(utils::write_content_to_file(

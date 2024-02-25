@@ -2,6 +2,7 @@ mod balance;
 mod block;
 mod cli;
 mod command;
+mod commonwealth;
 mod errors;
 mod evmosd;
 mod helper;

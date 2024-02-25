@@ -1,7 +1,7 @@
 evmosd tx gov submit-legacy-proposal software-upgrade {{version}} \
 --title "{{title}}" \
 --upgrade-height {{height}} \
---description "{{description}}" \
+--description "{{description}}\n----\n## Discussion\nPlease follow and discuss this proposal using the official [discussion on Commonwealth]({{commonwealth}})." \
 --keyring-backend {{keyring}} \
 --from {{key}} \
 --fees {{fees}} \
