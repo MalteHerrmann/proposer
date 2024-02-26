@@ -1,5 +1,7 @@
-use crate::errors::CommonwealthError::InvalidCommonwealthLink;
-use crate::{errors::InputError, network::Network};
+use crate::{
+    errors::{CommonwealthError::InvalidCommonwealthLink, InputError},
+    network::Network,
+};
 use chrono::{
     DateTime, Datelike, Duration, NaiveDateTime, NaiveTime, TimeZone, Timelike, Utc, Weekday,
 };

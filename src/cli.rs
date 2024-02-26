@@ -55,7 +55,7 @@ pub async fn generate_command(args: GenerateCommandArgs) -> Result<(), CommandEr
         None => inputs::choose_config()?, // NOTE: if no config file is provided, prompt the user to choose one
     };
 
-    let upgrade_helper = get_helper_from_json(&helper_config_path)?;
+    let mut upgrade_helper = get_helper_from_json(&helper_config_path)?;
     let client_config = get_client_config(
         &upgrade_helper
             .evmosd_home
@@ -65,6 +65,7 @@ pub async fn generate_command(args: GenerateCommandArgs) -> Result<(), CommandEr
 
     let commonwealth_link = inputs::choose_commonwealth_link().await?;
     check_commonwealth_link(&commonwealth_link, &upgrade_helper).await?;
+    upgrade_helper.commonwealth_link = Some(commonwealth_link.clone());
 
     let keys_with_balances = keys::get_keys_with_balances(keys::FilterKeysConfig {
         config: client_config.clone(),
@@ -79,7 +80,6 @@ pub async fn generate_command(args: GenerateCommandArgs) -> Result<(), CommandEr
         &upgrade_helper,
         &client_config,
         &key,
-        commonwealth_link.as_str(),
     )
     .await?;
 
