@@ -76,12 +76,7 @@ pub async fn generate_command(args: GenerateCommandArgs) -> Result<(), CommandEr
     let key = inputs::get_key(keys_with_balances)?;
 
     // Prepare command to submit proposal
-    let command = command::prepare_command(
-        &upgrade_helper,
-        &client_config,
-        &key,
-    )
-    .await?;
+    let command = command::prepare_command(&upgrade_helper, &client_config, &key).await?;
 
     // Write command to file
     Ok(utils::write_content_to_file(
