@@ -8,6 +8,7 @@
 - (prop) [#17](https://github.com/evmos/proposer/pull/17) Get summary of release notes using GPT-4.
 - (tests) [#18](https://github.com/evmos/proposer/pull/18) Add mocking for standard `GET` requests.
 - (cli) [#21](https://github.com/evmos/proposer/pull/21) Select key to submit proposal.
+- (command) [#25](https://github.com/evmos/proposer/pull/25) Add Commonwealth link to submitted proposal.
 
 ### Improvements
 
