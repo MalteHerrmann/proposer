@@ -68,7 +68,6 @@ pub async fn choose_commonwealth_link() -> Result<String, InputError> {
             if input.starts_with("https://commonwealth.im/evmos") {
                 Ok(Valid)
             } else {
-                // TODO: understand why the into() helps with the Box<dyn Error> here?
                 Err(InvalidCommonwealthLink.into())
             }
         })
