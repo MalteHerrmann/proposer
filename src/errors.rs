@@ -30,6 +30,8 @@ pub enum BlockError {
 pub enum CommandError {
     #[error("Failed to get client configuration: {0}")]
     ClientConfig(#[from] ConfigError),
+    #[error("Failed to validate Commonwealth link: {0}")]
+    Commonwealth(#[from] CommonwealthError),
     #[error("Failed to get helper: {0}")]
     GetHelper(#[from] HelperError),
     #[error("Failed to get user input: {0}")]
@@ -42,6 +44,17 @@ pub enum CommandError {
     Render(#[from] handlebars::RenderError),
     #[error("Failed to write to file: {0}")]
     Write(#[from] std::io::Error),
+}
+
+/// Error type for failures related to Commonwealth
+#[derive(Error, Debug)]
+pub enum CommonwealthError {
+    #[error("Invalid commonwealth link")]
+    InvalidCommonwealthLink,
+    #[error("Failed to parse url: {0}")]
+    ParseUrl(#[from] url::ParseError),
+    #[error("Failed to get body: {0}")]
+    GetBody(#[from] reqwest::Error),
 }
 
 /// Error type for failed parsing of the client configuration

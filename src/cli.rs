@@ -1,6 +1,7 @@
 use crate::evmosd::get_client_config;
 use crate::{
     command,
+    commonwealth::check_commonwealth_link,
     errors::{CommandError, ProposalError},
     helper::{get_helper_from_inputs, get_helper_from_json},
     inputs, keys,
@@ -54,13 +55,17 @@ pub async fn generate_command(args: GenerateCommandArgs) -> Result<(), CommandEr
         None => inputs::choose_config()?, // NOTE: if no config file is provided, prompt the user to choose one
     };
 
-    let upgrade_helper = get_helper_from_json(&helper_config_path)?;
+    let mut upgrade_helper = get_helper_from_json(&helper_config_path)?;
     let client_config = get_client_config(
         &upgrade_helper
             .evmosd_home
             .join("config/client.toml")
             .as_path(),
     )?;
+
+    let commonwealth_link = inputs::choose_commonwealth_link().await?;
+    check_commonwealth_link(&commonwealth_link, &upgrade_helper).await?;
+    upgrade_helper.commonwealth_link = Some(commonwealth_link.clone());
 
     let keys_with_balances = keys::get_keys_with_balances(keys::FilterKeysConfig {
         config: client_config.clone(),

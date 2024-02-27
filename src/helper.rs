@@ -12,6 +12,8 @@ use std::{fs, io};
 pub struct UpgradeHelper {
     /// The chain ID of the node.
     pub chain_id: String,
+    /// The link to the Commonwealth proposal (optional).
+    pub commonwealth_link: Option<String>,
     /// The name of the config file.
     pub config_file_name: String,
     /// The home directory of the Evmos binary.
@@ -55,6 +57,7 @@ impl UpgradeHelper {
 
         UpgradeHelper {
             chain_id,
+            commonwealth_link: None,
             config_file_name,
             evmosd_home,
             network,

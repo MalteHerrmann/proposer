@@ -1,8 +1,11 @@
-use crate::{errors::InputError, network::Network};
+use crate::{
+    errors::{CommonwealthError::InvalidCommonwealthLink, InputError},
+    network::Network,
+};
 use chrono::{
     DateTime, Datelike, Duration, NaiveDateTime, NaiveTime, TimeZone, Timelike, Utc, Weekday,
 };
-use inquire::{DateSelect, Select};
+use inquire::{validator::Validation::Valid, DateSelect, Select};
 use std::{fs, ops::Add, path::PathBuf};
 
 const MONTHS: [&str; 13] = [
@@ -55,6 +58,22 @@ pub fn choose_config() -> Result<PathBuf, InputError> {
         Ok(file) => Ok(current_dir.join(file)),
         Err(e) => Err(InputError::UserInput(e)),
     }
+}
+
+/// Prompts the user to input the link to the Commonwealth proposal and checks if the input is a valid URL
+/// that points to the Commonwealth page.
+pub async fn choose_commonwealth_link() -> Result<String, InputError> {
+    let link = inquire::Text::new("Enter the link to the Commonwealth proposal")
+        .with_validator(|input: &str| {
+            if input.starts_with("https://commonwealth.im/evmos") {
+                Ok(Valid)
+            } else {
+                Err(InvalidCommonwealthLink.into())
+            }
+        })
+        .prompt()?;
+
+    Ok(link)
 }
 
 /// Prompts the user to select the network type used.

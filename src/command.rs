@@ -24,6 +24,7 @@ pub async fn prepare_command(
     let data = json!({
         "assets": assets,
         "chain_id": helper.chain_id,
+        "commonwealth": helper.commonwealth_link,
         "description": description.replace("\n", "\\n"),  // NOTE: this is necessary to not print the actual new lines when rendering the template.
         "fees": fees,
         "height": helper.upgrade_height,
@@ -104,7 +105,7 @@ mod tests {
                 expected_command.push_str("--title \"Evmos Testnet v14.0.0 Upgrade\" \\\n");
                 expected_command
                     .push_str(format!("--upgrade-height {} \\\n", helper.upgrade_height).as_str());
-                expected_command.push_str("--description \"This is a test proposal.\" \\\n");
+                expected_command.push_str("--description \"This is a test proposal.\\n----\\n## Discussion\\nPlease follow and discuss this proposal using the official [discussion on Commonwealth]().\" \\\n");
                 expected_command.push_str("--keyring-backend test \\\n");
                 expected_command.push_str("--from dev0 \\\n");
                 expected_command.push_str("--fees 10000000000aevmos \\\n");
