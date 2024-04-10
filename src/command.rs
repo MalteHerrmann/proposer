@@ -1,7 +1,7 @@
 use crate::errors::PrepareError;
 use crate::evmosd::ClientConfig;
 use crate::helper::UpgradeHelper;
-use crate::network::Network;
+use crate::network::{get_denom, Network};
 use crate::release::{get_asset_string, get_instance, get_release};
 use handlebars::{no_escape, Handlebars};
 use serde_json::json;
@@ -16,9 +16,10 @@ pub async fn prepare_command(
     let description = get_description_from_md(&helper.proposal_file_name)?;
     let release = get_release(&get_instance(), helper.target_version.as_str()).await?;
     let assets = get_asset_string(&release).await?;
+    let denom = get_denom(helper.network.clone());
 
     // TODO: get fees from network conditions?
-    let fees = "10000000000aevmos";
+    let fees = format!("10000000000{}", denom);
     let tm_rpc = get_rpc_url(helper.network);
 
     let data = json!({
@@ -108,7 +109,7 @@ mod tests {
                 expected_command.push_str("--description \"This is a test proposal.\\n----\\n## Discussion\\nPlease follow and discuss this proposal using the official [discussion on Commonwealth]().\" \\\n");
                 expected_command.push_str("--keyring-backend test \\\n");
                 expected_command.push_str("--from dev0 \\\n");
-                expected_command.push_str("--fees 10000000000aevmos \\\n");
+                expected_command.push_str("--fees 10000000000atevmos \\\n");
                 expected_command.push_str("--gas auto \\\n");
                 expected_command.push_str("--chain-id evmos_9000-4 \\\n");
                 expected_command.push_str(

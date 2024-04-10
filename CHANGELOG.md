@@ -23,6 +23,7 @@
 ### Bug Fixes
 
 - (rpc) [#32](https://github.com/evmos/proposer/pull/32) Use port 443 on Lava RPC endpoints.
+- (command) [#33](https://github.com/evmos/proposer/pull/33) Use correct network denom for transaction fees.
 
 ## Legacy Changelog from [Original Repo](https://github.com/MalteHerrmann/upgrade-helper)
 
