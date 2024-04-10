@@ -20,6 +20,10 @@
 - (prop) [#22](https://github.com/evmos/proposer/pull/22) Choose GPT model via CLI flag.
 - (prop) [#23](https://github.com/evmos/proposer/pull/23) Get keyring location from user input.
 
+### Bug Fixes
+
+- (rpc) [#32](https://github.com/evmos/proposer/pull/32) Use port 443 on Lava RPC endpoints.
+
 ## Legacy Changelog from [Original Repo](https://github.com/MalteHerrmann/upgrade-helper)
 
 ### Features

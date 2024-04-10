@@ -56,8 +56,8 @@ fn get_description_from_md(filename: &str) -> io::Result<String> {
 /// Returns the RPC URL based on the network.
 fn get_rpc_url(network: Network) -> String {
     match network {
-        Network::Mainnet => "https://tm.evmos.lava.build:26657".to_string(),
-        Network::Testnet => "https://tm.evmos-testnet.lava.build:26657".to_string(),
+        Network::Mainnet => "https://tm.evmos.lava.build:443".to_string(),
+        Network::Testnet => "https://tm.evmos-testnet.lava.build:443".to_string(),
         Network::LocalNode => "http://localhost:26657".to_string(),
     }
 }
@@ -85,7 +85,7 @@ mod tests {
             chain_id: "evmos_9000-4".to_string(),
             keyring_backend: "test".to_string(),
             output: "text".to_string(),
-            node: "https://tm.evmos-testnet.lava.build:26657".to_string(),
+            node: "https://tm.evmos-testnet.lava.build:443".to_string(),
             broadcast_mode: "sync".to_string(),
         };
 
@@ -122,7 +122,7 @@ mod tests {
                     )
                     .as_str(),
                 );
-                expected_command.push_str("--node https://tm.evmos-testnet.lava.build:26657 \\\n");
+                expected_command.push_str("--node https://tm.evmos-testnet.lava.build:443 \\\n");
                 expected_command.push_str(concat!(r#"--upgrade-info '{"binaries":{"darwin/amd64":"https://github.com/evmos/evmos/releases/download/v14.0.0/evmos_14.0.0_Darwin_amd64.tar.gz?checksum=35202b28c856d289778010a90fdd6c49c49a451a8d7f60a13b0612d0cd70e178","darwin/arm64":"https://github.com/evmos/evmos/releases/download/v14.0.0/evmos_14.0.0_Darwin_arm64.tar.gz?checksum=541d4bac1513c84278c8d6b39c86aca109cc1ecc17652df56e57488ffbafd2d5","linux/amd64":"https://github.com/evmos/evmos/releases/download/v14.0.0/evmos_14.0.0_Linux_amd64.tar.gz?checksum=427c2c4a37f3e8cf6833388240fcda152a5372d4c5132ca2e3861a7085d35cd0","linux/arm64":"https://github.com/evmos/evmos/releases/download/v14.0.0/evmos_14.0.0_Linux_arm64.tar.gz?checksum=a84279d66b6b0ecd87b85243529d88598995eeb124bc16bb8190a7bf022825fb"}}'"#, " \\\n"));
                 expected_command.push_str("-b sync");
                 assert_eq!(
@@ -157,14 +157,11 @@ mod tests {
     #[test]
     fn test_get_rpc_url() {
         let rpc = get_rpc_url(Network::Mainnet);
-        assert_eq!(
-            rpc, "https://tm.evmos.lava.build:26657",
-            "rpc does not match"
-        );
+        assert_eq!(rpc, "https://tm.evmos.lava.build:443", "rpc does not match");
 
         let rpc = get_rpc_url(Network::Testnet);
         assert_eq!(
-            rpc, "https://tm.evmos-testnet.lava.build:26657",
+            rpc, "https://tm.evmos-testnet.lava.build:443",
             "rpc does not match"
         );
 
