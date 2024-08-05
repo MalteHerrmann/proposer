@@ -12,6 +12,7 @@
 
 ### Improvements
 
+- (llm) [#38](https://github.com/evmos/proposer/pull/38) Enable using GPT-4o.
 - (prop) [#23](https://github.com/evmos/proposer/pull/23) Get keyring location from user input.
 - (prop) [#22](https://github.com/evmos/proposer/pull/22) Choose GPT model via CLI flag.
 - (crate) [#16](https://github.com/evmos/proposer/pull/16) Adjust package name to `proposer`.

@@ -9,17 +9,23 @@ use std::fmt::Display;
 /// The used OpenAI model.
 #[derive(Debug, Clone, Copy, ValueEnum)]
 pub enum OpenAIModel {
-    GPT3_5,
-    GPT4,
+    Gpt4o,
 }
 
 impl Display for OpenAIModel {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let str = match self {
-            OpenAIModel::GPT3_5 => "gpt-3.5-turbo",
-            OpenAIModel::GPT4 => "gpt-4",
+            OpenAIModel::Gpt4o => "gpt4o",
         };
         write!(f, "{}", str)
+    }
+}
+
+impl OpenAIModel {
+    fn model_name(&self) -> &str {
+        match self {
+            OpenAIModel::Gpt4o => "gpt-4o",
+        }
     }
 }
 
@@ -49,7 +55,7 @@ async fn prompt_for_summary(prompt: String, model: OpenAIModel) -> Result<String
 
     let request = CreateChatCompletionRequestArgs::default()
         .max_tokens(2000u16)
-        .model(model.to_string())
+        .model(model.model_name())
         .messages([ChatCompletionRequestUserMessageArgs::default()
             .content(prompt)
             .build()?
@@ -78,7 +84,7 @@ mod summary_tests {
         let release: Release = serde_json::from_str(include_str!("testdata/release.json"))
             .expect("failed to parse release JSON");
 
-        let res = create_summary(&release, OpenAIModel::GPT3_5).await;
+        let res = create_summary(&release, OpenAIModel::Gpt4o).await;
         assert!(
             res.is_ok(),
             "expected no error; got:\n{}\n",

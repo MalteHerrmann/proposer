@@ -7,6 +7,7 @@
     "command",
     "crate",
     "github",
+    "llm",
     "prop",
     "rpc",
     "tests"
