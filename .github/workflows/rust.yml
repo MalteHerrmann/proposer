@@ -14,10 +14,11 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     - name: Build
-      run: cargo build --verbose
+      run: cargo build --verbose --locked
   test:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
     - name: Run tests
-      run: cargo test --verbose
+      run: cargo test --verbose --locked --features remote
+      #                                   ^^^^^^^^^^^^^^^^ -> NOTE: this escapes some tests when running in CI

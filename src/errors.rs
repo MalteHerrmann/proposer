@@ -121,7 +121,7 @@ pub enum KeysError {
 #[derive(Error, Debug)]
 pub enum SummaryError {
     #[error("Failed to communicate with LLM: {0}")]
-    LLM(#[from] OpenAIError),
+    Llm(#[from] OpenAIError),
     #[error("No summary generated")]
     NoSummary,
     #[error("Failed to get release notes: {0}")]

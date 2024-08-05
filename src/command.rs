@@ -16,7 +16,7 @@ pub async fn prepare_command(
     let description = get_description_from_md(&helper.proposal_file_name)?;
     let release = get_release(&get_instance(), helper.target_version.as_str()).await?;
     let assets = get_asset_string(&release).await?;
-    let denom = get_denom(helper.network.clone());
+    let denom = get_denom(helper.network);
 
     // TODO: get fees from network conditions?
     let fees = format!("10000000000{}", denom);
@@ -26,7 +26,7 @@ pub async fn prepare_command(
         "assets": assets,
         "chain_id": helper.chain_id,
         "commonwealth": helper.commonwealth_link,
-        "description": description.replace("\n", "\\n"),  // NOTE: this is necessary to not print the actual new lines when rendering the template.
+        "description": description.replace('\n', "\\n"),  // NOTE: this is necessary to not print the actual new lines when rendering the template.
         "fees": fees,
         "height": helper.upgrade_height,
         "home": helper.evmosd_home,

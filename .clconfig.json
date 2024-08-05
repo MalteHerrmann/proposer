@@ -1,0 +1,22 @@
+{
+  "categories": [
+    "all",
+    "block",
+    "chain",
+    "cli",
+    "command",
+    "crate",
+    "github",
+    "prop",
+    "rpc",
+    "tests"
+  ],
+  "change_types": {
+    "Bug Fixes": "bug\\s*fixes",
+    "Features": "features",
+    "Improvements": "improvements"
+  },
+  "expected_spellings": {},
+  "legacy_version": "v0.1.0",
+  "target_repo": "https://github.com/evmos/proposer"
+}

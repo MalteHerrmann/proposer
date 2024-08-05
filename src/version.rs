@@ -14,19 +14,11 @@ pub fn is_valid_version(version: &str) -> bool {
 /// The target version must be in the format `vX.Y.Z`.
 /// Testnet upgrades must use a release candidate with the suffix `-rcX`.
 pub fn is_valid_version_for_network(network: Network, target_version: &str) -> bool {
-    let re: Regex;
-
-    match network {
-        Network::LocalNode => {
-            re = Regex::new(r"^v\d+\.\d{1}\.\d+(-rc\d+)*$").unwrap();
-        }
-        Network::Testnet => {
-            re = Regex::new(r"^v\d+\.\d{1}\.\d+-rc\d+$").unwrap();
-        }
-        Network::Mainnet => {
-            re = Regex::new(r"^v\d+\.\d{1}\.\d+$").unwrap();
-        }
-    }
+    let re = match network {
+        Network::LocalNode => Regex::new(r"^v\d+\.\d{1}\.\d+(-rc\d+)*$").unwrap(),
+        Network::Testnet => Regex::new(r"^v\d+\.\d{1}\.\d+-rc\d+$").unwrap(),
+        Network::Mainnet => Regex::new(r"^v\d+\.\d{1}\.\d+$").unwrap(),
+    };
 
     re.is_match(target_version)
 }

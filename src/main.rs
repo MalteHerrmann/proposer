@@ -21,11 +21,11 @@ use clap::Parser;
 use std::process; // NOTE: needs to be imported for Cli::parse() to work
 
 // Crate imports
-use crate::cli::{SubCommand, CLI};
+use crate::cli::{Cli, SubCommand};
 
 #[tokio::main]
 async fn main() {
-    match CLI::parse().subcmd {
+    match Cli::parse().subcmd {
         SubCommand::GenerateProposal(args) => {
             if let Err(e) = cli::generate_proposal(args).await {
                 println!("Error generating proposal: {}", e);

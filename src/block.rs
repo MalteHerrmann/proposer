@@ -46,8 +46,8 @@ pub async fn get_estimated_height(
     base_url: &Url,
     upgrade_time: DateTime<Utc>,
 ) -> Result<u64, BlockError> {
-    let block = get_latest_block(&base_url).await?;
-    let block_minus_n = get_block(&base_url, block.height - N_BLOCKS).await?;
+    let block = get_latest_block(base_url).await?;
+    let block_minus_n = get_block(base_url, block.height - N_BLOCKS).await?;
     let seconds_per_block: f32 =
         (block.time - block_minus_n.time).num_seconds() as f32 / N_BLOCKS as f32;
 

@@ -4,28 +4,30 @@
 
 ### Features
 
-- (cli) [#1](https://github.com/evmos/proposer/pull/1) Prepare CLI command to submit proposal.
-- (prop) [#17](https://github.com/evmos/proposer/pull/17) Get summary of release notes using GPT-4.
-- (tests) [#18](https://github.com/evmos/proposer/pull/18) Add mocking for standard `GET` requests.
-- (cli) [#21](https://github.com/evmos/proposer/pull/21) Select key to submit proposal.
 - (command) [#25](https://github.com/evmos/proposer/pull/25) Add Commonwealth link to submitted proposal.
+- (cli) [#21](https://github.com/evmos/proposer/pull/21) Select key to submit proposal.
+- (tests) [#18](https://github.com/evmos/proposer/pull/18) Add mocking for standard `GET` requests.
+- (prop) [#17](https://github.com/evmos/proposer/pull/17) Get summary of release notes using GPT-4.
+- (cli) [#1](https://github.com/evmos/proposer/pull/1) Prepare CLI command to submit proposal.
 
 ### Improvements
 
-- (cli) [#12](https://github.com/evmos/proposer/pull/12) Use [clap](https://github.com/clap-rs/clap) for CLI handling.
-- (all) [#13](https://github.com/evmos/proposer/pull/13) Implement better error handling using [thiserror](https://github.com/dtolnay/thiserror).
-- (tests) [#11](https://github.com/evmos/proposer/pull/11) Mock API responses for tests.
-- (block) [#15](https://github.com/evmos/proposer/pull/15) Add error handling for blocks data.
-- (crate) [#16](https://github.com/evmos/proposer/pull/16) Adjust package name to `proposer`.
-- (prop) [#22](https://github.com/evmos/proposer/pull/22) Choose GPT model via CLI flag.
 - (prop) [#23](https://github.com/evmos/proposer/pull/23) Get keyring location from user input.
+- (prop) [#22](https://github.com/evmos/proposer/pull/22) Choose GPT model via CLI flag.
+- (crate) [#16](https://github.com/evmos/proposer/pull/16) Adjust package name to `proposer`.
+- (block) [#15](https://github.com/evmos/proposer/pull/15) Add error handling for blocks data.
+- (all) [#13](https://github.com/evmos/proposer/pull/13) Implement better error handling using [thiserror](https://github.com/dtolnay/thiserror).
+- (cli) [#12](https://github.com/evmos/proposer/pull/12) Use [clap](https://github.com/clap-rs/clap) for CLI handling.
+- (tests) [#11](https://github.com/evmos/proposer/pull/11) Mock API responses for tests.
 
 ### Bug Fixes
 
-- (rpc) [#32](https://github.com/evmos/proposer/pull/32) Use port 443 on Lava RPC endpoints.
 - (command) [#33](https://github.com/evmos/proposer/pull/33) Use correct network denom for transaction fees.
+- (rpc) [#32](https://github.com/evmos/proposer/pull/32) Use port 443 on Lava RPC endpoints.
 
-## Legacy Changelog from [Original Repo](https://github.com/MalteHerrmann/upgrade-helper)
+## [v0.1.0](https://github.com/evmos/proposer/releases/tag/v0.1.0) - 2024-08-05
+
+This section contains the legacy changelog from the [original repo](https://github.com/MalteHerrmann/upgrade-helper)
 
 ### Features
 

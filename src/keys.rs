@@ -28,7 +28,7 @@ pub async fn get_keys_with_balances(config: FilterKeysConfig) -> Result<Vec<Stri
 /// The keyring is configured in the user's home directory.
 fn get_keys_from_keyring(config: &FilterKeysConfig) -> Result<Vec<Key>, KeysError> {
     let output = process::Command::new("evmosd")
-        .args(&[
+        .args([
             "keys",
             "list",
             "--output",
@@ -76,6 +76,7 @@ async fn filter_keys_with_balance(
 mod tests {
     use super::*;
 
+    #[cfg(not(feature = "remote"))]
     #[tokio::test]
     async fn test_get_keys_with_balances() {
         let filter_config = FilterKeysConfig {

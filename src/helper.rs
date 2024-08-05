@@ -111,7 +111,7 @@ impl UpgradeHelper {
         let json = serde_json::to_string_pretty(&self).expect("Failed to convert to JSON");
         let path = Path::new(&self.config_file_name);
 
-        fs::write(&path, json)
+        fs::write(path, json)
     }
 }
 

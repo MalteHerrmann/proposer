@@ -13,7 +13,7 @@ use std::path::PathBuf;
 
 /// Utility to help with preparing software upgrades for the Evmos Core Team.
 #[derive(Debug, Parser)]
-pub struct CLI {
+pub struct Cli {
     /// The sub-command to execute.
     #[clap(subcommand)]
     pub subcmd: SubCommand,
@@ -57,7 +57,7 @@ pub async fn generate_command(args: GenerateCommandArgs) -> Result<(), CommandEr
 
     let mut upgrade_helper = get_helper_from_json(&helper_config_path)?;
     let client_config = get_client_config(
-        &upgrade_helper
+        upgrade_helper
             .evmosd_home
             .join("config/client.toml")
             .as_path(),

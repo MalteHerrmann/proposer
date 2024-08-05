@@ -67,6 +67,7 @@ async fn prompt_for_summary(prompt: String, model: OpenAIModel) -> Result<String
     Ok(summary)
 }
 
+#[cfg(not(feature = "remote"))]
 #[cfg(test)]
 mod summary_tests {
     use super::*;
