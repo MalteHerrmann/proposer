@@ -57,6 +57,11 @@ pub async fn get_estimated_height(
     Ok(blocks_to_upgrade + block.height)
 }
 
+/// Returns the block height rounded to the nearest 500.
+pub fn round_to_nearest_500(height: u64) -> u64 {
+    (height + 250) / 500 * 500
+}
+
 /// Gets the latest block from the Evmos network.
 async fn get_latest_block(base_url: &Url) -> Result<Block, BlockError> {
     let url = base_url.join(LATEST_BLOCK_ENDPOINT)?;
@@ -159,6 +164,14 @@ mod tests {
 
         let height = res.unwrap();
         assert!(height > 18798834, "expected a different block height");
+    }
+
+    #[test]
+    fn test_round_to_nearest_500() {
+        assert_eq!(round_to_nearest_500(0), 0);
+        assert_eq!(round_to_nearest_500(16_123_483), 16_123_500);
+        assert_eq!(round_to_nearest_500(16_123_683), 16_123_500);
+        assert_eq!(round_to_nearest_500(16_123_783), 16_124_000);
     }
 
     #[tokio::test]

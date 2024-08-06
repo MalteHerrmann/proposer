@@ -1,4 +1,4 @@
-use crate::block::{get_estimated_height, get_rest_provider};
+use crate::block::{get_estimated_height, get_rest_provider, round_to_nearest_500};
 use crate::errors::{HelperError, InputError, ValidationError};
 use crate::llm::{create_summary, OpenAIModel};
 use crate::release::{get_instance, get_release};
@@ -158,7 +158,7 @@ pub async fn get_helper_from_inputs(model: OpenAIModel) -> Result<UpgradeHelper,
     let voting_period = get_voting_period(used_network);
     let upgrade_time = inputs::get_upgrade_time(voting_period, Utc::now())?;
     let base_url = get_rest_provider(used_network);
-    let upgrade_height = get_estimated_height(&base_url, upgrade_time).await?;
+    let upgrade_height = round_to_nearest_500(get_estimated_height(&base_url, upgrade_time).await?);
 
     // Query and check the summary of the changes in the release
     let release = get_release(get_instance().as_ref(), target_version.as_str()).await?;

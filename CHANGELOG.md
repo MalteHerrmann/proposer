@@ -12,6 +12,7 @@
 
 ### Improvements
 
+- (block) [#39](https://github.com/evmos/proposer/pull/39) Round upgrade height to nearest 500.
 - (llm) [#38](https://github.com/evmos/proposer/pull/38) Enable using GPT-4o.
 - (prop) [#23](https://github.com/evmos/proposer/pull/23) Get keyring location from user input.
 - (prop) [#22](https://github.com/evmos/proposer/pull/22) Choose GPT model via CLI flag.
