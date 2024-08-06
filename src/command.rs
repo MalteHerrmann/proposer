@@ -13,7 +13,7 @@ pub async fn prepare_command(
     client_config: &ClientConfig,
     key: &str,
 ) -> Result<String, PrepareError> {
-    let description = get_description_from_md(&helper.proposal_file_name)?;
+    let mut description = get_description_from_md(&helper.proposal_file_name)?;
     let release = get_release(&get_instance(), helper.target_version.as_str()).await?;
     let assets = get_asset_string(&release).await?;
     let denom = get_denom(helper.network);
@@ -21,6 +21,29 @@ pub async fn prepare_command(
     // TODO: get fees from network conditions?
     let fees = format!("10000000000{}", denom);
     let tm_rpc = get_rpc_url(helper.network);
+
+    let mut handlebars = Handlebars::new();
+    handlebars.set_strict_mode(true);
+    handlebars.register_escape_fn(no_escape);
+
+    handlebars
+        .register_template_file("command", "src/templates/command.hbs")
+        .expect("Failed to register command template file");
+
+    handlebars
+        .register_template_file("commonwealth_template", "src/templates/commonwealth.hbs")
+        .expect("Failed to register commonwealth template file");
+
+    if helper.commonwealth_link.is_some() {
+        description = format!(
+            "{}{}",
+            description.as_str(),
+            handlebars.render(
+                "commonwealth_template",
+                &json!({"commonwealth": helper.commonwealth_link})
+            )?
+        );
+    }
 
     let data = json!({
         "assets": assets,
@@ -37,15 +60,8 @@ pub async fn prepare_command(
         "version": helper.target_version,
     });
 
-    let mut handlebars = Handlebars::new();
-    handlebars.set_strict_mode(true);
-    handlebars.register_escape_fn(no_escape);
-
-    handlebars
-        .register_template_file("command", "src/templates/command.hbs")
-        .expect("Failed to register template file");
-
     let command = handlebars.render("command", &data)?;
+
     Ok(command)
 }
 
@@ -106,7 +122,7 @@ mod tests {
                 expected_command.push_str("--title \"Evmos Testnet v14.0.0 Upgrade\" \\\n");
                 expected_command
                     .push_str(format!("--upgrade-height {} \\\n", helper.upgrade_height).as_str());
-                expected_command.push_str("--description \"This is a test proposal.\\n----\\n## Discussion\\nPlease follow and discuss this proposal using the official [discussion on Commonwealth]().\" \\\n");
+                expected_command.push_str("--description \"This is a test proposal.\" \\\n");
                 expected_command.push_str("--keyring-backend test \\\n");
                 expected_command.push_str("--from dev0 \\\n");
                 expected_command.push_str("--fees 10000000000atevmos \\\n");

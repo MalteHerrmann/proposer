@@ -6,6 +6,7 @@ use crate::{
     helper::{get_helper_from_inputs, get_helper_from_json},
     inputs, keys,
     llm::OpenAIModel,
+    network::Network,
     proposal, utils,
 };
 use clap::{Args, Parser, Subcommand};
@@ -63,9 +64,11 @@ pub async fn generate_command(args: GenerateCommandArgs) -> Result<(), CommandEr
             .as_path(),
     )?;
 
-    let commonwealth_link = inputs::choose_commonwealth_link().await?;
-    check_commonwealth_link(&commonwealth_link, &upgrade_helper).await?;
-    upgrade_helper.commonwealth_link = Some(commonwealth_link.clone());
+    if upgrade_helper.network == Network::Mainnet {
+        let commonwealth_link = inputs::choose_commonwealth_link().await?;
+        check_commonwealth_link(&commonwealth_link, &upgrade_helper).await?;
+        upgrade_helper.commonwealth_link = Some(commonwealth_link.clone());
+    }
 
     let keys_with_balances = keys::get_keys_with_balances(keys::FilterKeysConfig {
         config: client_config.clone(),

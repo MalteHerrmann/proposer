@@ -12,6 +12,7 @@
 
 ### Improvements
 
+- (command) [#40](https://github.com/evmos/proposer/pull/40) Improve handling of Commonwealth info.
 - (block) [#39](https://github.com/evmos/proposer/pull/39) Round upgrade height to nearest 500.
 - (llm) [#38](https://github.com/evmos/proposer/pull/38) Enable using GPT-4o.
 - (prop) [#23](https://github.com/evmos/proposer/pull/23) Get keyring location from user input.
