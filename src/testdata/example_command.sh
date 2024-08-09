@@ -1,0 +1,13 @@
+evmosd tx gov submit-legacy-proposal software-upgrade v14.0.0 \
+--title "Evmos Testnet v14.0.0 Upgrade" \
+--upgrade-height 60 \
+--description "This is a test proposal." \
+--keyring-backend test \
+--from dev0 \
+--fees 10000000000atevmos \
+--gas auto \
+--chain-id evmos_9000-4 \
+--home ./.evmosd \
+--node https://tm.evmos-testnet.lava.build:443 \
+--upgrade-info '{"binaries":{"darwin/amd64":"https://github.com/evmos/evmos/releases/download/v14.0.0/evmos_14.0.0_Darwin_amd64.tar.gz?checksum=35202b28c856d289778010a90fdd6c49c49a451a8d7f60a13b0612d0cd70e178","darwin/arm64":"https://github.com/evmos/evmos/releases/download/v14.0.0/evmos_14.0.0_Darwin_arm64.tar.gz?checksum=541d4bac1513c84278c8d6b39c86aca109cc1ecc17652df56e57488ffbafd2d5","linux/amd64":"https://github.com/evmos/evmos/releases/download/v14.0.0/evmos_14.0.0_Linux_amd64.tar.gz?checksum=427c2c4a37f3e8cf6833388240fcda152a5372d4c5132ca2e3861a7085d35cd0","linux/arm64":"https://github.com/evmos/evmos/releases/download/v14.0.0/evmos_14.0.0_Linux_arm64.tar.gz?checksum=a84279d66b6b0ecd87b85243529d88598995eeb124bc16bb8190a7bf022825fb"}}' \
+-b sync

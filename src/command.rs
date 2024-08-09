@@ -111,49 +111,20 @@ mod tests {
         std::fs::write(&helper.proposal_file_name, description)
             .expect("Unable to write proposal to file");
 
-        match prepare_command(&helper, &client_config, "dev0").await {
-            Ok(command) => {
-                // Remove description file
-                std::fs::remove_file(&helper.proposal_file_name)
-                    .expect("failed to remove description file after test");
+        // Parse the description and prepare exported command
+        let command = prepare_command(&helper, &client_config, "dev0")
+            .await
+            .expect("failed to prepare command");
 
-                let mut expected_command =
-                    "evmosd tx gov submit-legacy-proposal software-upgrade v14.0.0 \\\n".to_owned();
-                expected_command.push_str("--title \"Evmos Testnet v14.0.0 Upgrade\" \\\n");
-                expected_command
-                    .push_str(format!("--upgrade-height {} \\\n", helper.upgrade_height).as_str());
-                expected_command.push_str("--description \"This is a test proposal.\" \\\n");
-                expected_command.push_str("--keyring-backend test \\\n");
-                expected_command.push_str("--from dev0 \\\n");
-                expected_command.push_str("--fees 10000000000atevmos \\\n");
-                expected_command.push_str("--gas auto \\\n");
-                expected_command.push_str("--chain-id evmos_9000-4 \\\n");
-                expected_command.push_str(
-                    format!(
-                        "--home {} \\\n",
-                        helper
-                            .evmosd_home
-                            .as_os_str()
-                            .to_str()
-                            .expect("failed to get home directory as str")
-                    )
-                    .as_str(),
-                );
-                expected_command.push_str("--node https://tm.evmos-testnet.lava.build:443 \\\n");
-                expected_command.push_str(concat!(r#"--upgrade-info '{"binaries":{"darwin/amd64":"https://github.com/evmos/evmos/releases/download/v14.0.0/evmos_14.0.0_Darwin_amd64.tar.gz?checksum=35202b28c856d289778010a90fdd6c49c49a451a8d7f60a13b0612d0cd70e178","darwin/arm64":"https://github.com/evmos/evmos/releases/download/v14.0.0/evmos_14.0.0_Darwin_arm64.tar.gz?checksum=541d4bac1513c84278c8d6b39c86aca109cc1ecc17652df56e57488ffbafd2d5","linux/amd64":"https://github.com/evmos/evmos/releases/download/v14.0.0/evmos_14.0.0_Linux_amd64.tar.gz?checksum=427c2c4a37f3e8cf6833388240fcda152a5372d4c5132ca2e3861a7085d35cd0","linux/arm64":"https://github.com/evmos/evmos/releases/download/v14.0.0/evmos_14.0.0_Linux_arm64.tar.gz?checksum=a84279d66b6b0ecd87b85243529d88598995eeb124bc16bb8190a7bf022825fb"}}'"#, " \\\n"));
-                expected_command.push_str("-b sync");
-                assert_eq!(
-                    command, expected_command,
-                    "expected different proposal command"
-                );
-            }
-            Err(e) => {
-                // Remove description file
-                std::fs::remove_file(&helper.proposal_file_name)
-                    .expect("failed to remove description file after test");
-                assert!(false, "unexpected error while preparing command: {}", e);
-            }
-        }
+        // Remove description file
+        std::fs::remove_file(&helper.proposal_file_name)
+            .expect("failed to remove description file after test");
+
+        assert_eq!(
+            command,
+            include_str!("testdata/example_command.sh"),
+            "expected different proposal command"
+        );
     }
 
     #[test]
