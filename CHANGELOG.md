@@ -12,6 +12,7 @@
 
 ### Improvements
 
+- (command) [#45](https://github.com/evmos/proposer/pull/45) Update testnet Mintscan link and allow non-rc versions.
 - (all) [#44](https://github.com/evmos/proposer/pull/44) Minor improvements and updated README.
 - (command) [#40](https://github.com/evmos/proposer/pull/40) Improve handling of Commonwealth info.
 - (block) [#39](https://github.com/evmos/proposer/pull/39) Round upgrade height to nearest 500.

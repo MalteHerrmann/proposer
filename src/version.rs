@@ -16,7 +16,7 @@ pub fn is_valid_version(version: &str) -> bool {
 pub fn is_valid_version_for_network(network: Network, target_version: &str) -> bool {
     let re = match network {
         Network::LocalNode => Regex::new(r"^v\d+\.\d{1}\.\d+(-rc\d+)*$").unwrap(),
-        Network::Testnet => Regex::new(r"^v\d+\.\d{1}\.\d+-rc\d+$").unwrap(),
+        Network::Testnet => Regex::new(r"^v\d+\.\d{1}\.\d+(-rc\d+)*$").unwrap(),
         Network::Mainnet => Regex::new(r"^v\d+\.\d{1}\.\d+$").unwrap(),
     };
 
@@ -67,7 +67,7 @@ mod tests {
     #[test]
     fn test_is_valid_target_version_testnet_fail() {
         assert_eq!(
-            is_valid_version_for_network(network::Network::Testnet, "v14.0.0",),
+            is_valid_version_for_network(network::Network::Testnet, "v14.00",),
             false
         );
     }

@@ -44,15 +44,15 @@ fn get_height_with_link(network: Network, height: u64) -> String {
     let height_with_commas = height.to_formatted_string(&num_format::Locale::en);
     match network {
         Network::LocalNode => format!(
-            "[{}](https://www.mintscan.io/evmos/blocks/{})",
+            "[{}](https://mintscan.io/evmos/blocks/{})",
             height_with_commas, height
         ),
         Network::Mainnet => format!(
-            "[{}](https://www.mintscan.io/evmos/blocks/{})",
+            "[{}](https://mintscan.io/evmos/blocks/{})",
             height_with_commas, height
         ),
         Network::Testnet => format!(
-            "[{}](https://testnet.mintscan.io/evmos-testnet/blocks/{})",
+            "[{}](https://mintscan.io/evmos-testnet/blocks/{})",
             height_with_commas, height
         ),
     }
