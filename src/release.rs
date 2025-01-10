@@ -122,7 +122,7 @@ mod release_notes_tests {
 /// Returns the asset string for the release assets.
 /// The asset string is used in the Evmos CLI command.
 pub async fn get_asset_string(release: &Release) -> Result<String, PrepareError> {
-    let checksums = get_checksum_map(release.assets.clone()).await?;
+    let checksums = get_checksum_map(&release.assets).await?;
 
     Ok(build_assets_json(release, checksums).to_string())
 }
@@ -133,25 +133,17 @@ fn build_assets_json(release: &Release, checksums: HashMap<String, String>) -> V
         "binaries": {}
     });
 
-    for asset in release.assets.clone() {
-        let os_key = match get_os_key_from_asset_name(&asset.name) {
-            Some(key) => key,
-            None => {
-                continue;
-            }
-        };
-
-        let checksum = match checksums.get(&asset.name) {
-            Some(checksum) => checksum,
-            None => {
-                continue;
-            }
-        };
-
-        let url = format!("{}?checksum={}", asset.browser_download_url, checksum);
-
-        insert_into_assets(&mut assets, os_key, url);
-    }
+    release.assets.iter()
+        .filter_map(|asset| {
+            let os_key = get_os_key_from_asset_name(&asset.name)?;
+            let checksum = checksums.get(&asset.name)?;
+            let url = format!("{}?checksum={}", asset.browser_download_url, checksum);
+            
+            Some((os_key, url))
+        })
+        .for_each(|(os_key, url)| {
+            insert_into_assets(&mut assets, os_key, url);
+        });
 
     assets
 }
@@ -187,33 +179,29 @@ fn get_os_key_from_asset_name(name: &str) -> Option<String> {
 }
 
 /// Downloads the checksum file from the release assets and returns the built checksum string.
-async fn get_checksum_map(assets: Vec<Asset>) -> Result<HashMap<String, String>, PrepareError> {
-    let checksum = match get_checksum_from_assets(assets.as_slice()) {
-        Some(checksum) => checksum,
-        None => return Err(PrepareError::GetChecksumAsset),
-    };
+async fn get_checksum_map(assets: &[Asset]) -> Result<HashMap<String, String>, PrepareError> {
+    let checksum = get_checksum_from_assets(assets)
+        .ok_or(PrepareError::GetChecksumAsset)?;
+    
     let body = get_body(checksum.browser_download_url.clone()).await?;
 
-    let mut checksums = HashMap::new();
-
-    for line in body.lines() {
-        let line = line.trim();
-        let parts: Vec<&str> = line.split_whitespace().collect();
-
-        if parts.len() != 2 {
-            println!("Invalid checksum line: {}", line);
-            continue;
-        }
-
-        // NOTE: Windows links are not supported in the submit-legacy-proposal command
-        if parts[1].contains("Windows") {
-            continue;
-        }
-
-        checksums.insert(parts[1].to_string(), parts[0].to_string());
-    }
+    let checksums = body
+        .lines()
+        .filter_map(|line| parse_checksum_line(line.trim()))
+        .collect();
 
     Ok(checksums)
+}
+
+/// Parses a single line from the checksum file into an (asset name, checksum) pair.
+/// Returns None if the line is invalid or contains a Windows asset.
+fn parse_checksum_line(line: &str) -> Option<(String, String)> {
+    let mut parts = line.split_whitespace();
+    let checksum = parts.next()?.to_string();
+    let asset_name = parts.next()?.to_string();
+    
+    (!parts.next().is_some() && !asset_name.contains("Windows"))
+        .then_some((asset_name, checksum))
 }
 
 /// Returns an Octocrab instance.
@@ -230,7 +218,7 @@ mod assets_tests {
     async fn test_get_checksum_map_pass() {
         let release: Release = serde_json::from_str(include_str!("testdata/release.json")).unwrap();
 
-        let checksums = get_checksum_map(release.assets.clone()).await.unwrap();
+        let checksums = get_checksum_map(&release.assets).await.unwrap();
 
         assert!(checksums.contains_key("evmos_14.0.0_Linux_amd64.tar.gz"));
         assert!(checksums.contains_key("evmos_14.0.0_Linux_arm64.tar.gz"));

@@ -64,22 +64,22 @@ pub fn round_to_nearest_500(height: u64) -> u64 {
 
 /// Gets the latest block from the Evmos network.
 async fn get_latest_block(base_url: &Url) -> Result<Block, BlockError> {
-    let url = base_url.join(LATEST_BLOCK_ENDPOINT)?;
-    let body = get_body(url).await?;
-
-    process_block_body(body)
+    process_block_body(
+        get_body(
+            base_url.join(LATEST_BLOCK_ENDPOINT)?
+        ).await?
+    )
 }
 
 /// Gets the block at the given height from the Evmos network.
 async fn get_block(base_url: &Url, height: u64) -> Result<Block, BlockError> {
-    // Combine the REST endpoint with the block height
-    let url = base_url
-        .join(BLOCKS_ENDPOINT)?
-        .join(height.to_string().as_str())?;
-
-    let body = get_body(url).await?;
-
-    process_block_body(body)
+    process_block_body(
+        get_body(
+            base_url
+                .join(BLOCKS_ENDPOINT)?
+                .join(height.to_string().as_str())?
+        ).await?
+    )
 }
 
 /// Returns the appropriate REST provider for the given network.

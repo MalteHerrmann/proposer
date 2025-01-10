@@ -150,10 +150,10 @@ fn calculate_planned_date(voting_period: Duration, utc_time: DateTime<Utc>) -> D
     }
 
     // NOTE: we don't want to upgrade on a weekend, so we shift the upgrade to the next monday
-    if end_of_voting.weekday() == Weekday::Sat {
-        end_of_voting = end_of_voting.add(Duration::days(2));
-    } else if end_of_voting.weekday() == Weekday::Sun {
-        end_of_voting = end_of_voting.add(Duration::days(1));
+    match end_of_voting.weekday() {
+        Weekday::Sat => end_of_voting = end_of_voting.add(Duration::days(2)),
+        Weekday::Sun => end_of_voting = end_of_voting.add(Duration::days(1)),
+        _ => {}
     }
 
     Utc.with_ymd_and_hms(
@@ -170,11 +170,10 @@ fn calculate_planned_date(voting_period: Duration, utc_time: DateTime<Utc>) -> D
 /// Checks if the passed upgrade time is valid.
 /// The upgrade time cannot be on a weekend.
 pub fn is_valid_upgrade_time(upgrade_time: DateTime<Utc>) -> bool {
-    if upgrade_time.weekday() == Weekday::Sat || upgrade_time.weekday() == Weekday::Sun {
-        return false;
+    match upgrade_time.weekday() {
+        Weekday::Sat | Weekday::Sun => false,
+        _ => true,
     }
-
-    true
 }
 
 /// Returns a string representation of the upgrade time.

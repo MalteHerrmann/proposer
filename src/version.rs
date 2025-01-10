@@ -4,9 +4,9 @@ use regex::Regex;
 /// Returns a boolean value if the defined version fulfills the semantic
 /// versioning requirements.
 pub fn is_valid_version(version: &str) -> bool {
-    let valid = r"^v\d+\.\d+\.\d+(-rc\d+)*$";
-
-    Regex::new(valid).unwrap().is_match(version)
+    Regex::new(r"^v\d+\.\d+\.\d+(-rc\d+)*$")
+        .unwrap()
+        .is_match(version)
 }
 
 /// Returns a boolean value if the defined target version fits
