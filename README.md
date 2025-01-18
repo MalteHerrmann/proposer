@@ -50,7 +50,7 @@ Options:
 
 - **OpenAI API Key**
 
-    The tool is using OpenAI's LLMs to generate a summary of the changes in the release(s).  
+    The tool is using OpenAI's LLMs to generate a summary of the changes in the release(s).
     To use this feature, ensure that you run the binary in an environment where `OPENAI_API_KEY` is set.
 
 - **Configured `.evmosd` Home**
@@ -59,7 +59,7 @@ Options:
     the tool is checking `$HOME/.evmosd` for the configured keyring.
     This keyring is then used to get the list of available keys.
     It is checked, which of those keys hold a balance on the selected network (mainnet/testnet)
-    and lets the user select the one to execute the command with if there are multiple.  
+    and lets the user select the one to execute the command with if there are multiple.
     To use this feature, ensure that you have your `$HOME/.evmosd` configuration set
     so that the configured keyring holds your mainnet or testnet keys.
 
@@ -69,7 +69,7 @@ The tool can be built or installed locally using Rust's `cargo` utility.
 Clone the desired version of the repository locally:
 
 ```
-git clone https://github.com/evmos/proposer.git --depth latest
+git clone https://github.com/MalteHerrmann/proposer.git --depth latest
 cd proposer
 ```
 
