@@ -90,8 +90,7 @@ impl UpgradeHelper {
         }
 
         // Check if the upgrade time is valid
-        let valid_time = inputs::is_valid_upgrade_time(self.upgrade_time);
-        if !valid_time {
+        if !inputs::is_valid_upgrade_time(self.upgrade_time) {
             return Err(ValidationError::UpgradeTime(self.upgrade_time));
         }
 

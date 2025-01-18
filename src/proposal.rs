@@ -30,7 +30,7 @@ pub fn render_proposal(helper: &UpgradeHelper) -> Result<String, ProposalError> 
         "height": height_link,
         "name": helper.proposal_name,
         "n_blocks": n_blocks,
-        "network": format!("{}", helper.network), // TODO: implement serialize trait here?
+        "network": helper.network,
         "previous_version": get_release_md_link(helper.previous_version.as_str()),
         "version": get_release_md_link(helper.target_version.as_str()),
         "voting_time": helper.voting_period,
