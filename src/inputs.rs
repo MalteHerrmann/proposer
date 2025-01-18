@@ -170,10 +170,7 @@ fn calculate_planned_date(voting_period: Duration, utc_time: DateTime<Utc>) -> D
 /// Checks if the passed upgrade time is valid.
 /// The upgrade time cannot be on a weekend.
 pub fn is_valid_upgrade_time(upgrade_time: DateTime<Utc>) -> bool {
-    match upgrade_time.weekday() {
-        Weekday::Sat | Weekday::Sun => false,
-        _ => true,
-    }
+    !matches!(upgrade_time.weekday(), Weekday::Sat | Weekday::Sun)
 }
 
 /// Returns a string representation of the upgrade time.
