@@ -1,8 +1,13 @@
-use crate::block::{get_estimated_height, get_rest_provider, round_to_nearest_500};
-use crate::errors::{HelperError, InputError, ValidationError};
-use crate::llm::{create_summary, OpenAIModel};
-use crate::release::{get_instance, get_release};
-use crate::{evmosd, inputs, network::Network, version};
+use crate::{
+    block::{get_estimated_height, get_rest_provider, round_to_nearest_500},
+    config,
+    errors::{HelperError, InputError, ValidationError},
+    evmosd, inputs,
+    llm::{create_summary, OpenAIModel},
+    network::Network,
+    release::{get_instance, get_release},
+    version,
+};
 use chrono::{DateTime, Duration, Utc};
 use std::path::{Path, PathBuf};
 use std::{fs, io};
@@ -42,14 +47,13 @@ impl UpgradeHelper {
     /// Creates a new instance of the upgrade helper.
     pub fn new(
         evmosd_home: PathBuf,
-        network: Network,
+        network_config: &config::NetworkConfig,
         previous_version: &str,
         target_version: &str,
         upgrade_time: DateTime<Utc>,
         upgrade_height: u64,
         summary: &str,
     ) -> UpgradeHelper {
-        let chain_id = get_chain_id(network);
         let proposal_name = format!("Evmos {} {} Upgrade", network, target_version);
         let voting_period = get_voting_period(network);
         let proposal_file_name = format!("proposal-{}-{}.md", network, target_version);
@@ -133,7 +137,7 @@ pub fn get_helper_from_json(path: &Path) -> Result<UpgradeHelper, HelperError> {
 /// Creates a new instance of the upgrade helper based on querying the user for the necessary input.
 pub async fn get_helper_from_inputs(model: OpenAIModel) -> Result<UpgradeHelper, InputError> {
     // Query and check the network to use
-    let used_network = inputs::get_used_network()?;
+    let network_config = inputs::get_network_config(&config::get_evmos_config())?;
 
     // Query and check the version to upgrade from
     let previous_version = inputs::get_text("Previous version to upgrade from:")?;
@@ -146,17 +150,16 @@ pub async fn get_helper_from_inputs(model: OpenAIModel) -> Result<UpgradeHelper,
 
     // Query and check the target version to upgrade to
     let target_version = inputs::get_text("Target version to upgrade to:")?;
-    if !version::is_valid_version_for_network(used_network, target_version.as_str()) {
+    if !version::is_valid_version_for_network(&network_config, target_version.as_str()) {
         return Err(InputError::from(ValidationError::TargetVersion(
-            used_network,
+            network_config.name,
             target_version,
         )));
     }
 
     // Query and check the upgrade time and height
-    let voting_period = get_voting_period(used_network);
-    let upgrade_time = inputs::get_upgrade_time(voting_period, Utc::now())?;
-    let base_url = get_rest_provider(used_network);
+    let upgrade_time = inputs::get_upgrade_time(&network_config, Utc::now())?;
+    let base_url = get_rest_provider(&network_config);
     let upgrade_height = round_to_nearest_500(get_estimated_height(&base_url, upgrade_time).await?);
 
     // Query and check the summary of the changes in the release
@@ -164,12 +167,12 @@ pub async fn get_helper_from_inputs(model: OpenAIModel) -> Result<UpgradeHelper,
     let summary = create_summary(&release, model).await?;
 
     // Get the used home directory for the Evmos binary.
-    let evmosd_home = inputs::get_evmosd_home(&used_network)?;
+    let evmosd_home = inputs::get_node_home(&network_config)?;
 
     // Create an instance of the helper
     Ok(UpgradeHelper::new(
         evmosd_home,
-        used_network,
+        network_config,
         previous_version.as_str(),
         target_version.as_str(),
         upgrade_time,

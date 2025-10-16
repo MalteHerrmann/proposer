@@ -1,5 +1,4 @@
-use crate::errors::BlockError;
-use crate::{http::get_body, network::Network};
+use crate::{config::NetworkConfig, errors::BlockError, http::get_body};
 use chrono::{DateTime, NaiveDateTime, TimeZone, Utc};
 use regex::Regex;
 use serde::{Deserialize, Serialize};
@@ -64,11 +63,7 @@ pub fn round_to_nearest_500(height: u64) -> u64 {
 
 /// Gets the latest block from the Evmos network.
 async fn get_latest_block(base_url: &Url) -> Result<Block, BlockError> {
-    process_block_body(
-        get_body(
-            base_url.join(LATEST_BLOCK_ENDPOINT)?
-        ).await?
-    )
+    process_block_body(get_body(base_url.join(LATEST_BLOCK_ENDPOINT)?).await?)
 }
 
 /// Gets the block at the given height from the Evmos network.
@@ -77,20 +72,17 @@ async fn get_block(base_url: &Url, height: u64) -> Result<Block, BlockError> {
         get_body(
             base_url
                 .join(BLOCKS_ENDPOINT)?
-                .join(height.to_string().as_str())?
-        ).await?
+                .join(height.to_string().as_str())?,
+        )
+        .await?,
     )
 }
 
 /// Returns the appropriate REST provider for the given network.
-pub fn get_rest_provider(network: Network) -> Url {
-    let base_url = match network {
-        Network::LocalNode => "http://localhost:1317",
-        Network::Mainnet => "https://rest.evmos.lava.build",
-        Network::Testnet => "https://rest.evmos-testnet.lava.build",
-    };
-
-    Url::parse(base_url).unwrap()
+///
+/// TODO: this can probably be removed
+pub fn get_rest_provider(cfg: &NetworkConfig) -> Url {
+    Url::parse(&cfg.rest).unwrap()
 }
 
 /// Processes the block body.

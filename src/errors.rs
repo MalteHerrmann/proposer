@@ -181,7 +181,7 @@ pub enum ValidationError {
     #[error("Invalid previous version: {0}")]
     PreviousVersion(String),
     #[error("Invalid target version for {0}: {1}")]
-    TargetVersion(Network, String),
+    TargetVersion(String, String),
     #[error("Invalid upgrade time: {0}")]
     UpgradeTime(DateTime<Utc>),
 }

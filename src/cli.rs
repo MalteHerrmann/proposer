@@ -35,6 +35,8 @@ pub enum SubCommand {
 #[derive(Debug, Clone, Args)]
 pub struct GenerateProposalArgs {
     /// The LLM model to use for summarizing the release notes.
+    ///
+    /// TODO: enable using e.g. claude or cursor-agent in headless mode
     #[clap(short, long, default_value_t = OpenAIModel::Gpt4o)]
     model: OpenAIModel,
 }
