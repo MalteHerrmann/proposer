@@ -185,7 +185,7 @@ mod tests {
         assert_eq!(block.height, 18748834, "expected a different block height");
         assert_eq!(
             block.time,
-            Utc.with_ymd_and_hms(2024, 01, 05, 04, 39, 20).unwrap(),
+            Utc.with_ymd_and_hms(2024, 1, 5, 4, 39, 20).unwrap(),
             "expected a different block time",
         );
     }
@@ -201,7 +201,7 @@ mod tests {
         assert_eq!(block.height, 18500000, "expected a different block height");
         assert_eq!(
             block.time,
-            Utc.with_ymd_and_hms(2023, 11, 07, 02, 41, 36).unwrap(),
+            Utc.with_ymd_and_hms(2023, 11, 7, 2, 41, 36).unwrap(),
             "expected a different block time",
         );
     }

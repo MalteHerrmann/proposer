@@ -66,8 +66,10 @@ mod tests {
     async fn test_has_balance() {
         let mock_server = setup_mock_api().await;
 
-        let mut network_config = NetworkConfig::default();
-        network_config.rest = Url::parse(mock_server.uri().as_str()).unwrap();
+        let network_config = NetworkConfig{
+            rest: Url::parse(mock_server.uri().as_str()).unwrap(),
+            ..NetworkConfig::default()
+        };
 
         assert!(
             has_balance(TEST_ADDRESS, &network_config).await.unwrap(),
