@@ -1,8 +1,5 @@
-use crate::errors::KeysError;
-use crate::http::get_body;
-use crate::network::{get_denom, Network};
+use crate::{config::NetworkConfig, errors::KeysError, http::get_body};
 use serde::{Deserialize, Serialize};
-use url::Url;
 
 const BALANCES_ENDPOINT: &str = "cosmos/bank/v1beta1/balances/";
 
@@ -20,15 +17,11 @@ struct Balance {
 }
 
 /// Checks if a given address has a non-zero balance on the given network.
-pub async fn has_balance(
-    address: &str,
-    network: &Network,
-    base_url: &Url,
-) -> Result<bool, KeysError> {
-    let native_denom = get_denom(*network);
-    let balances_endpoint = base_url
+pub async fn has_balance(address: &str, network_config: &NetworkConfig) -> Result<bool, KeysError> {
+    let balances_endpoint = network_config
+        .rest
         .join(BALANCES_ENDPOINT)?
-        .join(format!("{}/by_denom?denom={}", address, native_denom).as_str())?;
+        .join(format!("{}/by_denom?denom={}", address, network_config.fee_denom).as_str())?;
 
     let balance: BalanceResponse =
         serde_json::from_str(get_body(balances_endpoint).await?.as_str())?;
@@ -39,9 +32,8 @@ pub async fn has_balance(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::network::Network;
     use serde_json::Value;
-    use std::str::FromStr;
+    use url::Url;
     use wiremock::matchers::{method, path, query_param};
     use wiremock::{Mock, MockServer, ResponseTemplate};
 
@@ -72,15 +64,13 @@ mod tests {
 
     #[tokio::test]
     async fn test_has_balance() {
-        let network = Network::LocalNode;
         let mock_server = setup_mock_api().await;
-        let mock_path =
-            Url::from_str(mock_server.uri().as_str()).expect("failed to parse mock server uri");
+
+        let mut network_config = NetworkConfig::default();
+        network_config.rest = Url::parse(mock_server.uri().as_str()).unwrap();
 
         assert!(
-            has_balance(TEST_ADDRESS, &network, &mock_path)
-                .await
-                .unwrap(),
+            has_balance(TEST_ADDRESS, &network_config).await.unwrap(),
             "expected a non-zero balance"
         );
     }

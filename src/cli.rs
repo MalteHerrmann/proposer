@@ -1,12 +1,10 @@
 use crate::evmosd::get_client_config;
 use crate::{
     command,
-    commonwealth::check_commonwealth_link,
     errors::{CommandError, ProposalError},
     helper::{get_helper_from_inputs, get_helper_from_json},
     inputs, keys,
     llm::OpenAIModel,
-    network::Network,
     proposal, utils,
 };
 use clap::{Args, Parser, Subcommand};
@@ -61,23 +59,20 @@ pub async fn generate_command(args: GenerateCommandArgs) -> Result<(), CommandEr
     let mut upgrade_helper = get_helper_from_json(&helper_config_path)?;
     let client_config = get_client_config(
         upgrade_helper
-            .evmosd_home
+            .network_config
+            .path
             .join("config/client.toml")
             .as_path(),
     )?;
 
-    if upgrade_helper.network == Network::Mainnet {
+    // TODO: remove commonwealth logic.
+    if upgrade_helper.network_config.name == "Mainnet" {
         let commonwealth_link = inputs::choose_commonwealth_link().await?;
-        check_commonwealth_link(&commonwealth_link, &upgrade_helper).await?;
         upgrade_helper.commonwealth_link = Some(commonwealth_link.clone());
     }
 
-    let keys_with_balances = keys::get_keys_with_balances(keys::FilterKeysConfig {
-        config: client_config.clone(),
-        home: upgrade_helper.evmosd_home.clone(),
-        network: upgrade_helper.network,
-    })
-    .await?;
+    let keys_with_balances =
+        keys::get_keys_with_balances(&client_config, &upgrade_helper.network_config).await?;
     let key = inputs::get_key(keys_with_balances)?;
 
     // Prepare command to submit proposal

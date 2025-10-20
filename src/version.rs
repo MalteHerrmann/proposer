@@ -28,7 +28,6 @@ pub fn is_valid_version_for_network(cfg: &NetworkConfig, target_version: &str) -
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::network;
 
     #[test]
     fn test_is_valid_version_pass() {

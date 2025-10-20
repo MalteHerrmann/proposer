@@ -133,12 +133,14 @@ fn build_assets_json(release: &Release, checksums: HashMap<String, String>) -> V
         "binaries": {}
     });
 
-    release.assets.iter()
+    release
+        .assets
+        .iter()
         .filter_map(|asset| {
             let os_key = get_os_key_from_asset_name(&asset.name)?;
             let checksum = checksums.get(&asset.name)?;
             let url = format!("{}?checksum={}", asset.browser_download_url, checksum);
-            
+
             Some((os_key, url))
         })
         .for_each(|(os_key, url)| {
@@ -180,9 +182,8 @@ fn get_os_key_from_asset_name(name: &str) -> Option<String> {
 
 /// Downloads the checksum file from the release assets and returns the built checksum string.
 async fn get_checksum_map(assets: &[Asset]) -> Result<HashMap<String, String>, PrepareError> {
-    let checksum = get_checksum_from_assets(assets)
-        .ok_or(PrepareError::GetChecksumAsset)?;
-    
+    let checksum = get_checksum_from_assets(assets).ok_or(PrepareError::GetChecksumAsset)?;
+
     let body = get_body(checksum.browser_download_url.clone()).await?;
 
     let checksums = body
@@ -199,9 +200,8 @@ fn parse_checksum_line(line: &str) -> Option<(String, String)> {
     let mut parts = line.split_whitespace();
     let checksum = parts.next()?.to_string();
     let asset_name = parts.next()?.to_string();
-    
-    (!parts.next().is_some() && !asset_name.contains("Windows"))
-        .then_some((asset_name, checksum))
+
+    (!parts.next().is_some() && !asset_name.contains("Windows")).then_some((asset_name, checksum))
 }
 
 /// Returns an Octocrab instance.

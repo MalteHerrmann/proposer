@@ -1,7 +1,6 @@
 use crate::{
     config::{self, NetworkConfig},
     errors::{CommonwealthError::InvalidCommonwealthLink, InputError},
-    network::Network,
 };
 use chrono::{
     DateTime, Datelike, Duration, NaiveDateTime, NaiveTime, TimeZone, Timelike, Utc, Weekday,
@@ -91,10 +90,16 @@ pub fn get_network_config(cfg: &config::Config) -> Result<config::NetworkConfig,
 
 /// Prompts the user to input the duration of the voting period.
 /// The duration is given in hours.
+///
+/// TODO: this method should be called in the setup of the helper.
 pub fn get_node_home(cfg: &NetworkConfig) -> Result<PathBuf, InputError> {
     let selected_option = inquire::Text::new("Enter the home path to your node keyring")
         .with_default(cfg.path.as_os_str().to_str().unwrap())
         .prompt()?;
+
+    if !PathBuf::from(&selected_option).exists() {
+        return Err(InputError::HomeDir(selected_option.to_string()));
+    }
 
     Ok(PathBuf::from(selected_option))
 }
@@ -130,8 +135,8 @@ pub fn get_upgrade_time(
 /// If the passed UTC time is after 2 pm UTC, the planned date will be shifted to the next day.
 fn calculate_planned_date(cfg: &NetworkConfig, utc_time: DateTime<Utc>) -> DateTime<Utc> {
     let mut end_of_voting = match cfg.voting_period {
-        Some(vp) => utc_time.add(vp),
-        None => utc_time.add(Duration::days(1)),
+        Some(vp) => utc_time.add(Duration::hours(vp)),
+        None => utc_time,
     };
 
     // NOTE: if using the tool after 2pm UTC or the end of voting would be at or after 2 PM, the upgrade should happen on the next day
@@ -212,14 +217,14 @@ mod tests {
     #[fixture]
     fn testnet_voting_period() -> NetworkConfig {
         let mut cfg = NetworkConfig::default();
-        cfg.voting_period = Some(Duration::hours(12));
+        cfg.voting_period = Some(Duration::hours(12).num_hours());
         cfg
     }
 
     #[fixture]
     fn mainnet_voting_period() -> NetworkConfig {
         let mut cfg = NetworkConfig::default();
-        cfg.voting_period = Some(Duration::hours(120));
+        cfg.voting_period = Some(Duration::hours(120).num_hours());
         cfg
     }
 

@@ -3,7 +3,9 @@ use serde::Deserialize;
 use std::path::Path;
 
 /// The client configuration for the `evmosd` node.
-#[derive(Clone, Deserialize)]
+///
+/// TODO: check if this can be removed
+#[derive(Clone, Default, Deserialize)]
 pub struct ClientConfig {
     #[serde(rename = "chain-id")]
     pub chain_id: String,
@@ -16,6 +18,8 @@ pub struct ClientConfig {
 }
 
 /// This method returns the client configuration for the `evmosd` node.
+///
+/// TODO: this lib should be renamed to not be tied to `evmosd`.
 pub fn get_client_config(path: &Path) -> Result<ClientConfig, ConfigError> {
     Ok(toml::from_str::<ClientConfig>(
         std::fs::read_to_string(path)?.as_str(),

@@ -1,4 +1,4 @@
-use crate::{config::NetworkConfig, errors::BlockError, http::get_body};
+use crate::{errors::BlockError, http::get_body};
 use chrono::{DateTime, NaiveDateTime, TimeZone, Utc};
 use regex::Regex;
 use serde::{Deserialize, Serialize};
@@ -76,13 +76,6 @@ async fn get_block(base_url: &Url, height: u64) -> Result<Block, BlockError> {
         )
         .await?,
     )
-}
-
-/// Returns the appropriate REST provider for the given network.
-///
-/// TODO: this can probably be removed
-pub fn get_rest_provider(cfg: &NetworkConfig) -> Url {
-    Url::parse(&cfg.rest).unwrap()
 }
 
 /// Processes the block body.

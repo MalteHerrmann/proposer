@@ -1,6 +1,8 @@
 use std::fmt;
 
-// Enum to represent different network options
+/// Enum to represent different network options
+///
+/// TODO: should be removed
 #[derive(Clone, Copy, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 pub enum Network {
     LocalNode,

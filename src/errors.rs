@@ -1,4 +1,3 @@
-use crate::network::Network;
 use async_openai::error::OpenAIError;
 use chrono::{DateTime, Utc};
 use inquire::InquireError;
@@ -86,6 +85,8 @@ pub enum InputError {
     GitHub(#[from] octocrab::Error),
     #[error("Invalid network: {0}")]
     InvalidNetwork(String),
+    #[error("Home directory does not exist: {0}")]
+    HomeDir(String),
     #[error("Got IO error: {0}")]
     IO(#[from] std::io::Error),
     #[error("No configuration files found in current directory: {0}")]
