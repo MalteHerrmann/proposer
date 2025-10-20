@@ -61,7 +61,7 @@ mod tests {
     #[test]
     fn test_render_proposal_pass() {
         let nc = NetworkConfig::default();
-        let uc = UpgradeConfig{
+        let uc = UpgradeConfig {
             previous_version: "v0.0.1".to_string(),
             target_version: "v0.1.0".to_string(),
             upgrade_time: Utc::now(),

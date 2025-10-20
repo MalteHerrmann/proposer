@@ -216,7 +216,7 @@ mod tests {
 
     #[fixture]
     fn mainnet_voting_period() -> NetworkConfig {
-        NetworkConfig{
+        NetworkConfig {
             voting_period: Some(Duration::hours(120).num_hours()),
             ..NetworkConfig::default()
         }

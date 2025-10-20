@@ -49,14 +49,15 @@ mod tests {
 
     #[test]
     fn test_is_valid_target_version_local_node_fail() {
-        assert!(
-            !is_valid_version_for_network(&NetworkConfig::default(), "v14.0",)
-        );
+        assert!(!is_valid_version_for_network(
+            &NetworkConfig::default(),
+            "v14.0",
+        ));
     }
 
     #[test]
     fn test_is_valid_target_version_testnet_pass() {
-        let cfg = NetworkConfig{
+        let cfg = NetworkConfig {
             allow_rc: true,
             ..NetworkConfig::default()
         };
@@ -65,22 +66,25 @@ mod tests {
 
     #[test]
     fn test_is_valid_target_version_testnet_fail() {
-        assert!(
-            !is_valid_version_for_network(&NetworkConfig::default(), "v14.00",)
-        );
+        assert!(!is_valid_version_for_network(
+            &NetworkConfig::default(),
+            "v14.00",
+        ));
     }
 
     #[test]
     fn test_is_valid_target_version_mainnet_pass() {
-        assert!(
-            is_valid_version_for_network(&NetworkConfig::default(), "v14.0.0",)
-        );
+        assert!(is_valid_version_for_network(
+            &NetworkConfig::default(),
+            "v14.0.0",
+        ));
     }
 
     #[test]
     fn test_is_valid_target_version_mainnet_fail() {
-        assert!(
-            !is_valid_version_for_network(&NetworkConfig::default(), "v14.0.0-rc1",)
-        );
+        assert!(!is_valid_version_for_network(
+            &NetworkConfig::default(),
+            "v14.0.0-rc1",
+        ));
     }
 }

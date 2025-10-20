@@ -7,7 +7,7 @@ use crate::{
     release::{get_instance, get_release},
     version,
 };
-use chrono::{Utc};
+use chrono::Utc;
 use std::path::Path;
 use std::{fs, io};
 
@@ -247,7 +247,10 @@ mod helper_tests {
         );
 
         // remove the config file
-        assert!(fs::remove_file(path).is_ok(), "expected success removing config file");
+        assert!(
+            fs::remove_file(path).is_ok(),
+            "expected success removing config file"
+        );
     }
 }
 
