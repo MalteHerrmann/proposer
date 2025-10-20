@@ -87,7 +87,7 @@ mod release_tests {
         let client = setup_octocrab(&mock_server.uri());
 
         let res = get_release(&client, "invalidj.xjaf/ie").await;
-        assert_eq!(res.is_err(), true);
+        assert!(res.is_err());
     }
 }
 
@@ -165,7 +165,7 @@ fn get_checksum_from_assets(assets: &[Asset]) -> Option<&Asset> {
 /// Returns the OS key from the asset name.
 fn get_os_key_from_asset_name(name: &str) -> Option<String> {
     // Check for regex (Linux|Darwin)_(amd64|arm64).tar.gz and store os and arch in variables
-    return match regex::Regex::new(r"(Linux|Darwin)_(amd64|arm64)") {
+    match regex::Regex::new(r"(Linux|Darwin)_(amd64|arm64)") {
         Ok(re) => {
             let captures = re.captures(name)?;
             let os = captures.get(1)?.as_str().to_ascii_lowercase();
@@ -177,7 +177,7 @@ fn get_os_key_from_asset_name(name: &str) -> Option<String> {
             println!("no key found for asset: {}", name);
             None
         }
-    };
+    }
 }
 
 /// Downloads the checksum file from the release assets and returns the built checksum string.
@@ -201,7 +201,7 @@ fn parse_checksum_line(line: &str) -> Option<(String, String)> {
     let checksum = parts.next()?.to_string();
     let asset_name = parts.next()?.to_string();
 
-    (!parts.next().is_some() && !asset_name.contains("Windows")).then_some((asset_name, checksum))
+    (parts.next().is_none() && !asset_name.contains("Windows")).then_some((asset_name, checksum))
 }
 
 /// Returns an Octocrab instance.

@@ -4,11 +4,10 @@ use crate::{
     errors::{HelperError, InputError, ValidationError},
     evmosd, inputs,
     llm::{create_summary, OpenAIModel},
-    network::Network,
     release::{get_instance, get_release},
     version,
 };
-use chrono::{Duration, Utc};
+use chrono::{Utc};
 use std::path::Path;
 use std::{fs, io};
 
@@ -248,13 +247,7 @@ mod helper_tests {
         );
 
         // remove the config file
-        match fs::remove_file(&path) {
-            Ok(_) => {}
-            Err(e) => {
-                println!("Failed to remove file '{}': {}", path.to_str().unwrap(), e);
-                assert!(false, "expected success removing config file");
-            }
-        }
+        assert!(fs::remove_file(path).is_ok(), "expected success removing config file");
     }
 }
 
@@ -274,30 +267,12 @@ mod path_tests {
     #[test]
     fn test_path_exists() {
         let path = Path::new("/tmp");
-        assert_eq!(path_exists(path), true);
+        assert!(path_exists(path));
     }
 
     #[test]
     fn test_path_does_not_exist() {
         let path = Path::new("/tmp/does-not-exist");
-        assert_eq!(path_exists(path), false);
-    }
-}
-
-/// Returns the voting period duration based on the network.
-pub fn get_voting_period(network: Network) -> Duration {
-    match network {
-        Network::LocalNode => Duration::hours(1),
-        Network::Testnet => Duration::hours(12),
-        Network::Mainnet => Duration::hours(120),
-    }
-}
-
-/// Returns the chain ID based on the network.
-fn get_chain_id(network: Network) -> String {
-    match network {
-        Network::LocalNode => "evmos_9000-4".to_string(),
-        Network::Testnet => "evmos_9000-4".to_string(),
-        Network::Mainnet => "evmos_9001-2".to_string(),
+        assert!(!path_exists(path));
     }
 }

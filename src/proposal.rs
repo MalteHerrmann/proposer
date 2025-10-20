@@ -61,12 +61,13 @@ mod tests {
     #[test]
     fn test_render_proposal_pass() {
         let nc = NetworkConfig::default();
-        let mut uc = UpgradeConfig::default();
-        uc.previous_version = "v0.0.1".to_string();
-        uc.target_version = "v0.1.0".to_string();
-        uc.upgrade_time = Utc::now();
-        uc.upgrade_height = 60;
-        uc.upgrade_name = "".to_string();
+        let uc = UpgradeConfig{
+            previous_version: "v0.0.1".to_string(),
+            target_version: "v0.1.0".to_string(),
+            upgrade_time: Utc::now(),
+            upgrade_height: 60,
+            ..UpgradeConfig::default()
+        };
 
         let helper = UpgradeHelper::new(&nc, &uc);
 

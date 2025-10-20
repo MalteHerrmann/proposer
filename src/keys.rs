@@ -10,12 +10,6 @@ pub struct Key {
     pub address: String,
 }
 
-/// Contains all necessary configuration to get the keys from the keyring and filter for ones with a balance.
-pub struct FilterKeysConfig {
-    pub config: ClientConfig,
-    pub network_config: NetworkConfig,
-}
-
 /// Returns a list of keys that have a non-zero balance on the configured network.
 pub async fn get_keys_with_balances(
     client_config: &ClientConfig,
@@ -92,7 +86,7 @@ mod tests {
         assert!(res.is_ok());
 
         let keys = res.unwrap();
-        assert!(keys.len() >= 1);
+        assert!(!keys.is_empty());
     }
 
     #[test]

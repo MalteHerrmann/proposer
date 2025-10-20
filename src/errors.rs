@@ -83,8 +83,6 @@ pub enum InputError {
     Block(#[from] BlockError),
     #[error("Failed to get GitHub data: {0}")]
     GitHub(#[from] octocrab::Error),
-    #[error("Invalid network: {0}")]
-    InvalidNetwork(String),
     #[error("Home directory does not exist: {0}")]
     HomeDir(String),
     #[error("Got IO error: {0}")]

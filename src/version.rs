@@ -31,58 +31,56 @@ mod tests {
 
     #[test]
     fn test_is_valid_version_pass() {
-        assert_eq!(is_valid_version("v14.0.0"), true);
-        assert_eq!(is_valid_version("v14.0.0-rc1"), true);
+        assert!(is_valid_version("v14.0.0"));
+        assert!(is_valid_version("v14.0.0-rc1"));
     }
 
     #[test]
     fn test_is_valid_version_fail() {
-        assert_eq!(is_valid_version("v14.0."), false);
-        assert_eq!(is_valid_version("v.0.1"), false);
+        assert!(!is_valid_version("v14.0."));
+        assert!(!is_valid_version("v.0.1"));
     }
 
     #[test]
     fn test_is_valid_target_version_local_node_pass() {
         let cfg = NetworkConfig::default();
-        assert_eq!(is_valid_version_for_network(&cfg, "v14.0.0",), true);
+        assert!(is_valid_version_for_network(&cfg, "v14.0.0",));
     }
 
     #[test]
     fn test_is_valid_target_version_local_node_fail() {
-        assert_eq!(
-            is_valid_version_for_network(&NetworkConfig::default(), "v14.0",),
-            false
+        assert!(
+            !is_valid_version_for_network(&NetworkConfig::default(), "v14.0",)
         );
     }
 
     #[test]
     fn test_is_valid_target_version_testnet_pass() {
-        let mut cfg = NetworkConfig::default();
-        cfg.allow_rc = true;
-        assert_eq!(is_valid_version_for_network(&cfg, "v14.0.0-rc1",), true);
+        let cfg = NetworkConfig{
+            allow_rc: true,
+            ..NetworkConfig::default()
+        };
+        assert!(is_valid_version_for_network(&cfg, "v14.0.0-rc1",));
     }
 
     #[test]
     fn test_is_valid_target_version_testnet_fail() {
-        assert_eq!(
-            is_valid_version_for_network(&NetworkConfig::default(), "v14.00",),
-            false
+        assert!(
+            !is_valid_version_for_network(&NetworkConfig::default(), "v14.00",)
         );
     }
 
     #[test]
     fn test_is_valid_target_version_mainnet_pass() {
-        assert_eq!(
-            is_valid_version_for_network(&NetworkConfig::default(), "v14.0.0",),
-            true
+        assert!(
+            is_valid_version_for_network(&NetworkConfig::default(), "v14.0.0",)
         );
     }
 
     #[test]
     fn test_is_valid_target_version_mainnet_fail() {
-        assert_eq!(
-            is_valid_version_for_network(&NetworkConfig::default(), "v14.0.0-rc1",),
-            false
+        assert!(
+            !is_valid_version_for_network(&NetworkConfig::default(), "v14.0.0-rc1",)
         );
     }
 }

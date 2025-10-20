@@ -50,7 +50,7 @@ pub fn get_evmos_config() -> Config {
                 name: "Local Node".into(),
                 path: PathBuf::from_str("/Users/malte/.tmp-evmosd").expect("node home path"),
                 allow_rc: true,
-                rest: Url::parse("http://localhost:1317".into()).expect("rest url"),
+                rest: Url::parse("http://localhost:1317").expect("rest url"),
                 voting_period: Some(Duration::hours(1).num_hours()),
                 target_time_utc: "16:00".into(),
             },

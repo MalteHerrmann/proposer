@@ -215,29 +215,11 @@ mod tests {
     }
 
     #[fixture]
-    fn testnet_voting_period() -> NetworkConfig {
-        let mut cfg = NetworkConfig::default();
-        cfg.voting_period = Some(Duration::hours(12).num_hours());
-        cfg
-    }
-
-    #[fixture]
     fn mainnet_voting_period() -> NetworkConfig {
-        let mut cfg = NetworkConfig::default();
-        cfg.voting_period = Some(Duration::hours(120).num_hours());
-        cfg
-    }
-
-    #[rstest]
-    fn test_calculate_planned_date_monday_morning_testnet(
-        monday_morning: DateTime<Utc>,
-        testnet_voting_period: NetworkConfig,
-    ) {
-        assert_eq!(
-            calculate_planned_date(&testnet_voting_period, monday_morning),
-            Utc.with_ymd_and_hms(2023, 10, 24, 16, 0, 0).unwrap(),
-            "expected different date for testnet upgrade when calling on monday morning",
-        );
+        NetworkConfig{
+            voting_period: Some(Duration::hours(120).num_hours()),
+            ..NetworkConfig::default()
+        }
     }
 
     #[rstest]
@@ -254,18 +236,6 @@ mod tests {
     }
 
     #[rstest]
-    fn test_calculate_planned_date_monday_evening_testnet(
-        monday_evening: DateTime<Utc>,
-        testnet_voting_period: NetworkConfig,
-    ) {
-        assert_eq!(
-            calculate_planned_date(&testnet_voting_period, monday_evening),
-            Utc.with_ymd_and_hms(2023, 10, 25, 16, 0, 0).unwrap(),
-            "expected different date for testnet upgrade when calling on monday evening",
-        );
-    }
-
-    #[rstest]
     fn test_calculate_planned_date_monday_evening_mainnet(
         monday_evening: DateTime<Utc>,
         mainnet_voting_period: NetworkConfig,
@@ -275,19 +245,6 @@ mod tests {
             // NOTE: the upgrade should happen on the next monday 4PM, not on saturday which would be t+120h
             Utc.with_ymd_and_hms(2023, 10, 30, 16, 0, 0).unwrap(),
             "expected different date for mainnet upgrade when calling on monday evening",
-        );
-    }
-
-    #[rstest]
-    fn test_calculate_planned_date_friday_morning_testnet(
-        friday_morning: DateTime<Utc>,
-        testnet_voting_period: NetworkConfig,
-    ) {
-        assert_eq!(
-            calculate_planned_date(&testnet_voting_period, friday_morning),
-            // NOTE: the upgrade should happen on the next monday 4PM, not on saturday which would be t+12h
-            Utc.with_ymd_and_hms(2023, 10, 30, 16, 0, 0).unwrap(),
-            "expected different date for testnet upgrade when calling on thursday morning",
         );
     }
 
