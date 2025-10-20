@@ -215,8 +215,9 @@ mod tests {
     }
 
     #[fixture]
-    fn mainnet_voting_period() -> NetworkConfig {
+    fn network_config() -> NetworkConfig {
         NetworkConfig {
+            target_time_utc: "16:00".into(),
             voting_period: Some(Duration::hours(120).num_hours()),
             ..NetworkConfig::default()
         }
@@ -225,10 +226,10 @@ mod tests {
     #[rstest]
     fn test_calculate_planned_date_monday_morning_mainnet(
         monday_morning: DateTime<Utc>,
-        mainnet_voting_period: NetworkConfig,
+        network_config: NetworkConfig,
     ) {
         assert_eq!(
-            calculate_planned_date(&mainnet_voting_period, monday_morning),
+            calculate_planned_date(&network_config, monday_morning),
             // NOTE: the upgrade should happen on the next monday 4PM, not on saturday which would be t+120h
             Utc.with_ymd_and_hms(2023, 10, 30, 16, 0, 0).unwrap(),
             "expected different date for mainnet upgrade when calling on monday morning",
@@ -238,10 +239,10 @@ mod tests {
     #[rstest]
     fn test_calculate_planned_date_monday_evening_mainnet(
         monday_evening: DateTime<Utc>,
-        mainnet_voting_period: NetworkConfig,
+        network_config: NetworkConfig,
     ) {
         assert_eq!(
-            calculate_planned_date(&mainnet_voting_period, monday_evening),
+            calculate_planned_date(&network_config, monday_evening),
             // NOTE: the upgrade should happen on the next monday 4PM, not on saturday which would be t+120h
             Utc.with_ymd_and_hms(2023, 10, 30, 16, 0, 0).unwrap(),
             "expected different date for mainnet upgrade when calling on monday evening",
@@ -251,10 +252,10 @@ mod tests {
     #[rstest]
     fn test_calculate_planned_date_friday_morning_mainnet(
         friday_morning: DateTime<Utc>,
-        mainnet_voting_period: NetworkConfig,
+        network_config: NetworkConfig,
     ) {
         assert_eq!(
-            calculate_planned_date(&mainnet_voting_period, friday_morning),
+            calculate_planned_date(&network_config, friday_morning),
             // NOTE: the upgrade should happen on the next wednesday 4PM
             Utc.with_ymd_and_hms(2023, 11, 1, 16, 0, 0).unwrap(),
             "expected different date for mainnet upgrade when calling on thursday morning",

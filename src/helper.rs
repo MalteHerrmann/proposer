@@ -176,23 +176,21 @@ mod helper_tests {
         let helper = UpgradeHelper::new(
             &NetworkConfig::default(),
             &UpgradeConfig {
-                upgrade_name: "".to_string(),
                 previous_version: "v14.0.0".to_string(),
                 target_version: "v14.0.0-rc1".to_string(),
                 upgrade_time,
                 upgrade_height: 60,
-                summary: "".to_string(),
+                ..UpgradeConfig::default()
             },
         );
 
-        assert_eq!(helper.upgrade_config.previous_version, "".to_string());
+        assert_eq!(helper.upgrade_config.previous_version, "v14.0.0".to_string());
         assert_eq!(
             helper.upgrade_config.target_version,
             "v14.0.0-rc1".to_string()
         );
         assert_eq!(helper.upgrade_config.upgrade_time, upgrade_time);
         assert_eq!(helper.upgrade_config.upgrade_height, 60);
-        assert_eq!(helper.upgrade_config.summary, "".to_string());
     }
 
     #[test]
