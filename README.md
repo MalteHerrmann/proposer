@@ -12,6 +12,8 @@ This repository contains a helper to aid in generating the contents of Software 
 
 ## Usage
 
+<!-- TODO: this whole thing needs to be adjusted to avoid the specific steps for the outdated Evmos implementation -->
+
 **NOTE:** Because the Commonwealth integration is not yet implemented (an API key is already requested)
 it is not possible to run all of this in one go.
 
@@ -53,15 +55,17 @@ Options:
     The tool is using OpenAI's LLMs to generate a summary of the changes in the release(s).
     To use this feature, ensure that you run the binary in an environment where `OPENAI_API_KEY` is set.
 
-- **Configured `.evmosd` Home**
+- **Configured `.appd` Home**
 
     To generate a shell command that can be instantly used,
-    the tool is checking `$HOME/.evmosd` for the configured keyring.
+    the tool is checking the given home directory for the node
+    to extract the configured keyring.
     This keyring is then used to get the list of available keys.
     It is checked, which of those keys hold a balance on the selected network (mainnet/testnet)
     and lets the user select the one to execute the command with if there are multiple.
-    To use this feature, ensure that you have your `$HOME/.evmosd` configuration set
-    so that the configured keyring holds your mainnet or testnet keys.
+
+    To use this feature, ensure that you have your `$HOME/.appd` configuration set
+    so that the configured keyring holds your desired keys.
 
 ## Installation
 

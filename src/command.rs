@@ -1,7 +1,6 @@
+use crate::appd::ClientConfig;
 use crate::errors::PrepareError;
-use crate::evmosd::ClientConfig;
 use crate::helper::UpgradeHelper;
-use crate::network::{get_denom, Network};
 use crate::release::{get_asset_string, get_instance, get_release};
 use handlebars::{no_escape, Handlebars};
 use serde_json::json;
@@ -14,13 +13,15 @@ pub async fn prepare_command(
     key: &str,
 ) -> Result<String, PrepareError> {
     let mut description = get_description_from_md(&helper.proposal_file_name)?;
-    let release = get_release(&get_instance(), helper.target_version.as_str()).await?;
+    let release = get_release(
+        &get_instance(),
+        helper.upgrade_config.target_version.as_str(),
+    )
+    .await?;
     let assets = get_asset_string(&release).await?;
-    let denom = get_denom(helper.network);
 
     // TODO: get fees from network conditions?
-    let fees = format!("10000000000{}", denom);
-    let tm_rpc = get_rpc_url(helper.network);
+    let fees = format!("10000000000{}", helper.network_config.fee_denom);
 
     let mut handlebars = Handlebars::new();
     handlebars.set_strict_mode(true);
@@ -47,17 +48,18 @@ pub async fn prepare_command(
 
     let data = json!({
         "assets": assets,
-        "chain_id": helper.chain_id,
+        "bin": helper.network_config.binary,
+        "chain_id": helper.network_config.chain_id,
         "commonwealth": helper.commonwealth_link,
         "description": description.replace('\n', "\\n"),  // NOTE: this is necessary to not print the actual new lines when rendering the template.
         "fees": fees,
-        "height": helper.upgrade_height,
-        "home": helper.evmosd_home,
+        "height": helper.upgrade_config.upgrade_height,
+        "home": helper.network_config.path,
         "key": key,
         "keyring": client_config.keyring_backend,
-        "title": helper.proposal_name,
-        "tm_rpc": tm_rpc,
-        "version": helper.target_version,
+        "title": helper.upgrade_config.upgrade_name,
+        "tm_rpc": helper.network_config.cosmos_rpc,
+        "version": helper.upgrade_config.target_version,
     });
 
     let command = handlebars.render("command", &data)?;
@@ -70,33 +72,24 @@ fn get_description_from_md(filename: &str) -> io::Result<String> {
     std::fs::read_to_string(filename)
 }
 
-/// Returns the RPC URL based on the network.
-fn get_rpc_url(network: Network) -> String {
-    match network {
-        Network::Mainnet => "https://tm.evmos.lava.build:443".to_string(),
-        Network::Testnet => "https://tm.evmos-testnet.lava.build:443".to_string(),
-        Network::LocalNode => "http://localhost:26657".to_string(),
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::network::Network;
+    use crate::config::{NetworkConfig, UpgradeConfig};
     use chrono::Utc;
-    use std::path::PathBuf;
 
     #[tokio::test]
     async fn test_prepare_command() {
-        let helper = UpgradeHelper::new(
-            PathBuf::from("./.evmosd"),
-            Network::Testnet,
-            "v13.0.0",
-            "v14.0.0",
-            Utc::now(),
-            60,
-            "",
-        );
+        let nc = NetworkConfig::default();
+        let uc = UpgradeConfig {
+            previous_version: "v13.0.0".to_string(),
+            target_version: "v14.0.0".to_string(),
+            upgrade_time: Utc::now(),
+            upgrade_height: 60,
+            ..UpgradeConfig::default()
+        };
+
+        let helper = UpgradeHelper::new(&nc, &uc);
 
         let client_config = ClientConfig {
             chain_id: "evmos_9000-4".to_string(),
@@ -140,20 +133,5 @@ mod tests {
             description.is_err(),
             "description should be err, but is not"
         );
-    }
-
-    #[test]
-    fn test_get_rpc_url() {
-        let rpc = get_rpc_url(Network::Mainnet);
-        assert_eq!(rpc, "https://tm.evmos.lava.build:443", "rpc does not match");
-
-        let rpc = get_rpc_url(Network::Testnet);
-        assert_eq!(
-            rpc, "https://tm.evmos-testnet.lava.build:443",
-            "rpc does not match"
-        );
-
-        let rpc = get_rpc_url(Network::LocalNode);
-        assert_eq!(rpc, "http://localhost:26657", "rpc does not match");
     }
 }

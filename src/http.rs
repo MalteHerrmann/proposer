@@ -14,13 +14,13 @@ mod tests {
     async fn test_get_body_pass() {
         let url = Url::parse("https://httpbin.org/get").unwrap();
         let res = get_body(url).await;
-        assert_eq!(res.is_ok(), true, "the request should be successful");
+        assert!(res.is_ok(), "the request should be successful");
     }
 
     #[tokio::test]
     async fn test_get_body_fail() {
         let url = Url::parse("https://invalidurl.org/get").unwrap();
         let res = get_body(url).await;
-        assert_eq!(res.is_err(), true);
+        assert!(res.is_err());
     }
 }

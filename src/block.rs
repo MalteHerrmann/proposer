@@ -1,5 +1,4 @@
-use crate::errors::BlockError;
-use crate::{http::get_body, network::Network};
+use crate::{errors::BlockError, http::get_body};
 use chrono::{DateTime, NaiveDateTime, TimeZone, Utc};
 use regex::Regex;
 use serde::{Deserialize, Serialize};
@@ -64,11 +63,7 @@ pub fn round_to_nearest_500(height: u64) -> u64 {
 
 /// Gets the latest block from the Evmos network.
 async fn get_latest_block(base_url: &Url) -> Result<Block, BlockError> {
-    process_block_body(
-        get_body(
-            base_url.join(LATEST_BLOCK_ENDPOINT)?
-        ).await?
-    )
+    process_block_body(get_body(base_url.join(LATEST_BLOCK_ENDPOINT)?).await?)
 }
 
 /// Gets the block at the given height from the Evmos network.
@@ -77,20 +72,10 @@ async fn get_block(base_url: &Url, height: u64) -> Result<Block, BlockError> {
         get_body(
             base_url
                 .join(BLOCKS_ENDPOINT)?
-                .join(height.to_string().as_str())?
-        ).await?
+                .join(height.to_string().as_str())?,
+        )
+        .await?,
     )
-}
-
-/// Returns the appropriate REST provider for the given network.
-pub fn get_rest_provider(network: Network) -> Url {
-    let base_url = match network {
-        Network::LocalNode => "http://localhost:1317",
-        Network::Mainnet => "https://rest.evmos.lava.build",
-        Network::Testnet => "https://rest.evmos-testnet.lava.build",
-    };
-
-    Url::parse(base_url).unwrap()
 }
 
 /// Processes the block body.
@@ -200,7 +185,7 @@ mod tests {
         assert_eq!(block.height, 18748834, "expected a different block height");
         assert_eq!(
             block.time,
-            Utc.with_ymd_and_hms(2024, 01, 05, 04, 39, 20).unwrap(),
+            Utc.with_ymd_and_hms(2024, 1, 5, 4, 39, 20).unwrap(),
             "expected a different block time",
         );
     }
@@ -216,7 +201,7 @@ mod tests {
         assert_eq!(block.height, 18500000, "expected a different block height");
         assert_eq!(
             block.time,
-            Utc.with_ymd_and_hms(2023, 11, 07, 02, 41, 36).unwrap(),
+            Utc.with_ymd_and_hms(2023, 11, 7, 2, 41, 36).unwrap(),
             "expected a different block time",
         );
     }

@@ -1,6 +1,6 @@
 use crate::{
+    config::{self, NetworkConfig},
     errors::{CommonwealthError::InvalidCommonwealthLink, InputError},
-    network::Network,
 };
 use chrono::{
     DateTime, Datelike, Duration, NaiveDateTime, NaiveTime, TimeZone, Timelike, Utc, Weekday,
@@ -29,10 +29,10 @@ const MONTHS: [&str; 13] = [
 pub fn choose_config() -> Result<PathBuf, InputError> {
     let current_dir = std::env::current_dir()?;
 
-    // Get all files in the current directory
+    // Get all files in the current directory.
     let paths = fs::read_dir(&current_dir)?;
 
-    // Filter for JSON files
+    // Filter for JSON files.
     let json_files = paths.filter(|path| {
         path.as_ref()
             .unwrap()
@@ -42,7 +42,7 @@ pub fn choose_config() -> Result<PathBuf, InputError> {
             .ends_with(".json")
     });
 
-    // Collect the file names
+    // Collect the file names.
     let config_files: Vec<String> = json_files
         .map(|file| file.unwrap().path().to_string_lossy().to_string())
         .collect();
@@ -51,9 +51,7 @@ pub fn choose_config() -> Result<PathBuf, InputError> {
         return Err(InputError::NoConfigFiles(current_dir));
     }
 
-    // Prompt the user to select the configuration file
-    //
-    // FIXME: Why does the question mark operator not work here? It doesn't register the #[from] attribute in the error enum somehow?
+    // Prompt the user to select the configuration file.
     match Select::new("Select configuration file", config_files).prompt() {
         Ok(file) => Ok(current_dir.join(file)),
         Err(e) => Err(InputError::UserInput(e)),
@@ -77,37 +75,30 @@ pub async fn choose_commonwealth_link() -> Result<String, InputError> {
 }
 
 /// Prompts the user to select the network type used.
-pub fn get_used_network() -> Result<Network, InputError> {
-    let network_options = vec!["Local Node", "Testnet", "Mainnet"];
+pub fn get_network_config(
+    available_configs: Vec<NetworkConfig>,
+) -> Result<config::NetworkConfig, InputError> {
+    let network_options = available_configs.iter().map(|n| n.name.clone()).collect();
     let chosen_network = Select::new("Select network", network_options).prompt()?;
 
-    // TODO: improve handling here! Should be more elegant to reverse the print stuff from the Network
-    // type.
-    let used_network = match chosen_network {
-        "Local Node" => Network::LocalNode,
-        "Testnet" => Network::Testnet,
-        "Mainnet" => Network::Mainnet,
-        &_ => {
-            return Err(InputError::InvalidNetwork(chosen_network.to_string()));
-        }
-    };
+    let used_config = available_configs
+        .iter()
+        .find(|&n| n.name == chosen_network)
+        .expect("expected to find chosen network name");
 
-    Ok(used_network)
+    Ok(used_config.clone())
 }
 
 /// Prompts the user to input the duration of the voting period.
 /// The duration is given in hours.
-pub fn get_evmosd_home(network: &Network) -> Result<PathBuf, InputError> {
-    let mut default_path = dirs::home_dir().expect("failed to get home directory");
-
-    match network {
-        Network::LocalNode => &default_path.push(".tmp-evmosd"),
-        _ => &default_path.push(".evmosd"),
-    };
-
-    let selected_option = inquire::Text::new("Enter the home path to your Evmos keyring")
-        .with_default(default_path.as_os_str().to_str().unwrap())
+pub fn get_node_home(cfg: &NetworkConfig) -> Result<PathBuf, InputError> {
+    let selected_option = inquire::Text::new("Enter the home path to your node keyring")
+        .with_default(cfg.path.as_os_str().to_str().unwrap())
         .prompt()?;
+
+    if !PathBuf::from(&selected_option).exists() {
+        return Err(InputError::HomeDir(selected_option.to_string()));
+    }
 
     Ok(PathBuf::from(selected_option))
 }
@@ -120,10 +111,10 @@ pub fn get_text(prompt: &str) -> Result<String, InputError> {
 /// Prompts the user to input the date for the planned upgrade.
 /// The date is calculated based on the current time and the voting period duration.
 pub fn get_upgrade_time(
-    voting_period: Duration,
+    cfg: &NetworkConfig,
     utc_time: DateTime<Utc>,
 ) -> Result<DateTime<Utc>, InputError> {
-    let default_date = calculate_planned_date(voting_period, utc_time);
+    let default_date = calculate_planned_date(cfg, utc_time);
 
     // Prompt the user to input the desired upgrade date
     let date = DateSelect::new("Select date for the planned upgrade")
@@ -141,10 +132,15 @@ pub fn get_upgrade_time(
 /// Calculates the date for the planned upgrade given the current time and the voting period duration.
 /// Per default, 4 pm UTC is used as a reference time.
 /// If the passed UTC time is after 2 pm UTC, the planned date will be shifted to the next day.
-fn calculate_planned_date(voting_period: Duration, utc_time: DateTime<Utc>) -> DateTime<Utc> {
-    let mut end_of_voting = utc_time.add(voting_period);
+fn calculate_planned_date(cfg: &NetworkConfig, utc_time: DateTime<Utc>) -> DateTime<Utc> {
+    let mut end_of_voting = match cfg.voting_period {
+        Some(vp) => utc_time.add(Duration::hours(vp)),
+        None => utc_time,
+    };
 
     // NOTE: if using the tool after 2pm UTC or the end of voting would be at or after 2 PM, the upgrade should happen on the next day
+    //
+    // TODO: rather we should get the input for the target update time.
     if utc_time.hour() > 14 || end_of_voting.hour() >= 16 {
         end_of_voting = end_of_voting.add(Duration::days(1));
     }
@@ -156,13 +152,16 @@ fn calculate_planned_date(voting_period: Duration, utc_time: DateTime<Utc>) -> D
         _ => {}
     }
 
+    let target_time = chrono::NaiveTime::parse_from_str(&cfg.target_time_utc, "%H:%M")
+        .expect("failed to parse target time");
+
     Utc.with_ymd_and_hms(
         end_of_voting.year(),
         end_of_voting.month(),
         end_of_voting.day(),
-        16,
-        0,
-        0,
+        target_time.hour(),
+        target_time.minute(),
+        target_time.second(),
     )
     .unwrap()
 }
@@ -215,34 +214,21 @@ mod tests {
     }
 
     #[fixture]
-    fn testnet_voting_period() -> Duration {
-        Duration::hours(12)
-    }
-
-    #[fixture]
-    fn mainnet_voting_period() -> Duration {
-        Duration::hours(120)
-    }
-
-    #[rstest]
-    fn test_calculate_planned_date_monday_morning_testnet(
-        monday_morning: DateTime<Utc>,
-        testnet_voting_period: Duration,
-    ) {
-        assert_eq!(
-            calculate_planned_date(testnet_voting_period, monday_morning),
-            Utc.with_ymd_and_hms(2023, 10, 24, 16, 0, 0).unwrap(),
-            "expected different date for testnet upgrade when calling on monday morning",
-        );
+    fn network_config() -> NetworkConfig {
+        NetworkConfig {
+            target_time_utc: "16:00".into(),
+            voting_period: Some(Duration::hours(120).num_hours()),
+            ..NetworkConfig::default()
+        }
     }
 
     #[rstest]
     fn test_calculate_planned_date_monday_morning_mainnet(
         monday_morning: DateTime<Utc>,
-        mainnet_voting_period: Duration,
+        network_config: NetworkConfig,
     ) {
         assert_eq!(
-            calculate_planned_date(mainnet_voting_period, monday_morning),
+            calculate_planned_date(&network_config, monday_morning),
             // NOTE: the upgrade should happen on the next monday 4PM, not on saturday which would be t+120h
             Utc.with_ymd_and_hms(2023, 10, 30, 16, 0, 0).unwrap(),
             "expected different date for mainnet upgrade when calling on monday morning",
@@ -250,24 +236,12 @@ mod tests {
     }
 
     #[rstest]
-    fn test_calculate_planned_date_monday_evening_testnet(
-        monday_evening: DateTime<Utc>,
-        testnet_voting_period: Duration,
-    ) {
-        assert_eq!(
-            calculate_planned_date(testnet_voting_period, monday_evening),
-            Utc.with_ymd_and_hms(2023, 10, 25, 16, 0, 0).unwrap(),
-            "expected different date for testnet upgrade when calling on monday evening",
-        );
-    }
-
-    #[rstest]
     fn test_calculate_planned_date_monday_evening_mainnet(
         monday_evening: DateTime<Utc>,
-        mainnet_voting_period: Duration,
+        network_config: NetworkConfig,
     ) {
         assert_eq!(
-            calculate_planned_date(mainnet_voting_period, monday_evening),
+            calculate_planned_date(&network_config, monday_evening),
             // NOTE: the upgrade should happen on the next monday 4PM, not on saturday which would be t+120h
             Utc.with_ymd_and_hms(2023, 10, 30, 16, 0, 0).unwrap(),
             "expected different date for mainnet upgrade when calling on monday evening",
@@ -275,25 +249,12 @@ mod tests {
     }
 
     #[rstest]
-    fn test_calculate_planned_date_friday_morning_testnet(
-        friday_morning: DateTime<Utc>,
-        testnet_voting_period: Duration,
-    ) {
-        assert_eq!(
-            calculate_planned_date(testnet_voting_period, friday_morning),
-            // NOTE: the upgrade should happen on the next monday 4PM, not on saturday which would be t+12h
-            Utc.with_ymd_and_hms(2023, 10, 30, 16, 0, 0).unwrap(),
-            "expected different date for testnet upgrade when calling on thursday morning",
-        );
-    }
-
-    #[rstest]
     fn test_calculate_planned_date_friday_morning_mainnet(
         friday_morning: DateTime<Utc>,
-        mainnet_voting_period: Duration,
+        network_config: NetworkConfig,
     ) {
         assert_eq!(
-            calculate_planned_date(mainnet_voting_period, friday_morning),
+            calculate_planned_date(&network_config, friday_morning),
             // NOTE: the upgrade should happen on the next wednesday 4PM
             Utc.with_ymd_and_hms(2023, 11, 1, 16, 0, 0).unwrap(),
             "expected different date for mainnet upgrade when calling on thursday morning",

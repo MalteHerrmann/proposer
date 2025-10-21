@@ -1,106 +1,90 @@
-use crate::block::{get_estimated_height, get_rest_provider, round_to_nearest_500};
-use crate::errors::{HelperError, InputError, ValidationError};
-use crate::llm::{create_summary, OpenAIModel};
-use crate::release::{get_instance, get_release};
-use crate::{evmosd, inputs, network::Network, version};
-use chrono::{DateTime, Duration, Utc};
-use std::path::{Path, PathBuf};
+use crate::{
+    appd,
+    block::{get_estimated_height, round_to_nearest_500},
+    config,
+    errors::{HelperError, InputError, ValidationError},
+    inputs,
+    llm::{create_summary, OpenAIModel},
+    release::{get_instance, get_release},
+    version,
+};
+use chrono::Utc;
+use std::path::Path;
 use std::{fs, io};
 
 /// Contains all relevant information for the scheduled upgrade.
-#[derive(Debug, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Default, serde::Serialize, serde::Deserialize)]
 pub struct UpgradeHelper {
-    /// The chain ID of the node.
-    pub chain_id: String,
     /// The link to the Commonwealth proposal (optional).
     pub commonwealth_link: Option<String>,
     /// The name of the config file.
     pub config_file_name: String,
-    /// The home directory of the Evmos binary.
-    pub evmosd_home: PathBuf,
-    /// The network to create the commands and proposal description for.
-    pub network: Network,
-    /// The previous version to upgrade from.
-    pub previous_version: String,
-    /// The name of the proposal.
-    pub proposal_name: String,
+    /// The configuration of the used node binary.
+    pub network_config: config::NetworkConfig,
     /// The name of the proposal file.
     pub proposal_file_name: String,
-    /// The summary of the changes in the release.
-    pub summary: String,
-    /// The target version to upgrade to.
-    pub target_version: String,
-    /// The scheduled height of the upgrade.
-    pub upgrade_height: u64,
-    /// The scheduled time of the upgrade.
-    pub upgrade_time: DateTime<Utc>,
-    /// The number of hours for the voting period.
-    pub voting_period: i64,
+    /// The configuration of the generated proposal contents.
+    pub upgrade_config: config::UpgradeConfig,
 }
 
 impl UpgradeHelper {
     /// Creates a new instance of the upgrade helper.
     pub fn new(
-        evmosd_home: PathBuf,
-        network: Network,
-        previous_version: &str,
-        target_version: &str,
-        upgrade_time: DateTime<Utc>,
-        upgrade_height: u64,
-        summary: &str,
+        network_config: &config::NetworkConfig,
+        upgrade_config: &config::UpgradeConfig,
     ) -> UpgradeHelper {
-        let chain_id = get_chain_id(network);
-        let proposal_name = format!("Evmos {} {} Upgrade", network, target_version);
-        let voting_period = get_voting_period(network);
-        let proposal_file_name = format!("proposal-{}-{}.md", network, target_version);
-        let config_file_name = format!("proposal-{}-{}.json", network, target_version);
+        let proposal_file_name = format!(
+            "proposal-{}-{}.md",
+            network_config.name, upgrade_config.target_version
+        );
+        let config_file_name = format!(
+            "proposal-{}-{}.json",
+            network_config.name, upgrade_config.target_version
+        );
 
         UpgradeHelper {
-            chain_id,
             commonwealth_link: None,
             config_file_name,
-            evmosd_home,
-            network,
-            previous_version: previous_version.to_string(),
-            proposal_name,
+            network_config: network_config.clone(),
             proposal_file_name,
-            summary: summary.to_string(),
-            target_version: target_version.to_string(),
-            upgrade_height,
-            upgrade_time,
-            voting_period: voting_period.num_hours(),
+            upgrade_config: upgrade_config.clone(),
         }
     }
 
     /// Validates the upgrade helper.
     pub fn validate(&self) -> Result<(), ValidationError> {
         // Check if the target version is valid
-        if !version::is_valid_version_for_network(self.network, self.target_version.as_str()) {
+        if !version::is_valid_version_for_network(
+            &self.network_config,
+            self.upgrade_config.target_version.as_str(),
+        ) {
             return Err(ValidationError::TargetVersion(
-                self.network,
-                self.target_version.clone(),
+                self.network_config.name.clone(),
+                self.upgrade_config.target_version.clone(),
             ));
         }
 
         // Check if the previous version is valid
-        if !version::is_valid_version(self.previous_version.as_str()) {
+        if !version::is_valid_version(self.upgrade_config.previous_version.as_str()) {
             return Err(ValidationError::PreviousVersion(
-                self.previous_version.clone(),
+                self.upgrade_config.previous_version.clone(),
             ));
         }
 
         // Check if the upgrade time is valid
-        if !inputs::is_valid_upgrade_time(self.upgrade_time) {
-            return Err(ValidationError::UpgradeTime(self.upgrade_time));
+        if !inputs::is_valid_upgrade_time(self.upgrade_config.upgrade_time) {
+            return Err(ValidationError::UpgradeTime(
+                self.upgrade_config.upgrade_time,
+            ));
         }
 
         // Check if home folder exists
-        if !path_exists(&self.evmosd_home) {
-            return Err(ValidationError::HomeDir(self.evmosd_home.clone()));
+        if !path_exists(&self.network_config.path) {
+            return Err(ValidationError::HomeDir(self.network_config.path.clone()));
         }
 
         // Check if the home folder contains the client configuration
-        evmosd::get_client_config(&self.evmosd_home.join("config/client.toml"))?;
+        appd::get_client_config(&self.network_config.path.join("config/client.toml"))?;
 
         Ok(())
     }
@@ -131,9 +115,11 @@ pub fn get_helper_from_json(path: &Path) -> Result<UpgradeHelper, HelperError> {
 }
 
 /// Creates a new instance of the upgrade helper based on querying the user for the necessary input.
+///
+/// TODO: this is currently doing too much, the summary etc. should be optional and not hardwired.
 pub async fn get_helper_from_inputs(model: OpenAIModel) -> Result<UpgradeHelper, InputError> {
     // Query and check the network to use
-    let used_network = inputs::get_used_network()?;
+    let mut network_config = inputs::get_network_config(config::get_available_configs())?;
 
     // Query and check the version to upgrade from
     let previous_version = inputs::get_text("Previous version to upgrade from:")?;
@@ -146,83 +132,86 @@ pub async fn get_helper_from_inputs(model: OpenAIModel) -> Result<UpgradeHelper,
 
     // Query and check the target version to upgrade to
     let target_version = inputs::get_text("Target version to upgrade to:")?;
-    if !version::is_valid_version_for_network(used_network, target_version.as_str()) {
+    if !version::is_valid_version_for_network(&network_config, target_version.as_str()) {
         return Err(InputError::from(ValidationError::TargetVersion(
-            used_network,
+            network_config.name,
             target_version,
         )));
     }
 
     // Query and check the upgrade time and height
-    let voting_period = get_voting_period(used_network);
-    let upgrade_time = inputs::get_upgrade_time(voting_period, Utc::now())?;
-    let base_url = get_rest_provider(used_network);
-    let upgrade_height = round_to_nearest_500(get_estimated_height(&base_url, upgrade_time).await?);
+    let upgrade_time = inputs::get_upgrade_time(&network_config, Utc::now())?;
+    let upgrade_height =
+        round_to_nearest_500(get_estimated_height(&network_config.rest, upgrade_time).await?);
 
     // Query and check the summary of the changes in the release
     let release = get_release(get_instance().as_ref(), target_version.as_str()).await?;
     let summary = create_summary(&release, model).await?;
 
-    // Get the used home directory for the Evmos binary.
-    let evmosd_home = inputs::get_evmosd_home(&used_network)?;
+    // Get the used home directory for the used binary.
+    let node_home = inputs::get_node_home(&network_config)?;
+    network_config.path = node_home;
 
     // Create an instance of the helper
     Ok(UpgradeHelper::new(
-        evmosd_home,
-        used_network,
-        previous_version.as_str(),
-        target_version.as_str(),
-        upgrade_time,
-        upgrade_height,
-        summary.as_str(),
+        &network_config,
+        &config::UpgradeConfig {
+            // TODO: get upgrade name from user
+            upgrade_name: "".to_string(),
+            previous_version,
+            target_version,
+            upgrade_time,
+            upgrade_height,
+            summary,
+        },
     ))
 }
 
 #[cfg(test)]
 mod helper_tests {
     use super::*;
+    use crate::config::{NetworkConfig, UpgradeConfig};
     use chrono::TimeZone;
 
     #[test]
     fn test_new_upgrade_helper() {
-        let home = PathBuf::from("./.evmosd");
-        let network = Network::Testnet;
-        let previous_version = "v14.0.0";
-        let target_version = "v14.0.0-rc1";
         let upgrade_time = Utc.with_ymd_and_hms(2021, 1, 1, 0, 0, 0).unwrap();
         let helper = UpgradeHelper::new(
-            home,
-            network,
-            previous_version,
-            target_version,
-            upgrade_time,
-            60,
-            "",
+            &NetworkConfig::default(),
+            &UpgradeConfig {
+                previous_version: "v14.0.0".to_string(),
+                target_version: "v14.0.0-rc1".to_string(),
+                upgrade_time,
+                upgrade_height: 60,
+                ..UpgradeConfig::default()
+            },
         );
-        assert_eq!(helper.chain_id, "evmos_9000-4");
-        assert_eq!(helper.config_file_name, "proposal-Testnet-v14.0.0-rc1.json");
-        assert!(
-            helper.evmosd_home.to_str().unwrap().contains(".evmosd"),
-            "expected different home directory"
+
+        assert_eq!(
+            helper.upgrade_config.previous_version,
+            "v14.0.0".to_string()
         );
-        assert_eq!(helper.network, Network::Testnet);
-        assert_eq!(helper.previous_version, "v14.0.0");
-        assert_eq!(helper.proposal_name, "Evmos Testnet v14.0.0-rc1 Upgrade");
-        assert_eq!(helper.proposal_file_name, "proposal-Testnet-v14.0.0-rc1.md");
-        assert_eq!(helper.target_version, "v14.0.0-rc1");
+        assert_eq!(
+            helper.upgrade_config.target_version,
+            "v14.0.0-rc1".to_string()
+        );
+        assert_eq!(helper.upgrade_config.upgrade_time, upgrade_time);
+        assert_eq!(helper.upgrade_config.upgrade_height, 60);
     }
 
     #[test]
     fn test_write_to_json_and_read_from_json() {
         let upgrade_height = 60;
         let helper = UpgradeHelper::new(
-            PathBuf::from("./.evmosd"),
-            Network::Testnet,
-            "v14.0.0",
-            "v14.0.0-rc1",
-            Utc.with_ymd_and_hms(2021, 1, 1, 0, 0, 0).unwrap(),
-            upgrade_height,
-            "",
+            &NetworkConfig::default(),
+            &UpgradeConfig {
+                upgrade_name: "".to_string(),
+                previous_version: "v14.0.0".to_string(),
+                target_version: "v14.0.0-rc1".to_string(),
+                upgrade_time: Utc.with_ymd_and_hms(2021, 1, 1, 0, 0, 0).unwrap(),
+                upgrade_height,
+                summary: "".to_string(),
+            },
         );
 
         assert!(
@@ -235,18 +224,37 @@ mod helper_tests {
         assert!(path_exists(path), "expected config file to exist");
 
         let read_input_helper = from_json(path).expect("failed to read helper from JSON file");
-        assert_eq!(helper.chain_id, read_input_helper.chain_id);
+        assert_eq!(
+            helper.network_config.chain_id,
+            read_input_helper.network_config.chain_id
+        );
         assert_eq!(helper.config_file_name, read_input_helper.config_file_name);
-        assert_eq!(helper.upgrade_height, read_input_helper.upgrade_height);
+        assert_eq!(
+            helper.upgrade_config.previous_version,
+            read_input_helper.upgrade_config.previous_version
+        );
+        assert_eq!(
+            helper.upgrade_config.target_version,
+            read_input_helper.upgrade_config.target_version
+        );
+        assert_eq!(
+            helper.upgrade_config.upgrade_time,
+            read_input_helper.upgrade_config.upgrade_time
+        );
+        assert_eq!(
+            helper.upgrade_config.upgrade_height,
+            read_input_helper.upgrade_config.upgrade_height
+        );
+        assert_eq!(
+            helper.upgrade_config.summary,
+            read_input_helper.upgrade_config.summary
+        );
 
         // remove the config file
-        match fs::remove_file(&path) {
-            Ok(_) => {}
-            Err(e) => {
-                println!("Failed to remove file '{}': {}", path.to_str().unwrap(), e);
-                assert!(false, "expected success removing config file");
-            }
-        }
+        assert!(
+            fs::remove_file(path).is_ok(),
+            "expected success removing config file"
+        );
     }
 }
 
@@ -266,30 +274,12 @@ mod path_tests {
     #[test]
     fn test_path_exists() {
         let path = Path::new("/tmp");
-        assert_eq!(path_exists(path), true);
+        assert!(path_exists(path));
     }
 
     #[test]
     fn test_path_does_not_exist() {
         let path = Path::new("/tmp/does-not-exist");
-        assert_eq!(path_exists(path), false);
-    }
-}
-
-/// Returns the voting period duration based on the network.
-pub fn get_voting_period(network: Network) -> Duration {
-    match network {
-        Network::LocalNode => Duration::hours(1),
-        Network::Testnet => Duration::hours(12),
-        Network::Mainnet => Duration::hours(120),
-    }
-}
-
-/// Returns the chain ID based on the network.
-fn get_chain_id(network: Network) -> String {
-    match network {
-        Network::LocalNode => "evmos_9000-4".to_string(),
-        Network::Testnet => "evmos_9000-4".to_string(),
-        Network::Mainnet => "evmos_9001-2".to_string(),
+        assert!(!path_exists(path));
     }
 }

@@ -2,8 +2,10 @@ use crate::errors::ConfigError;
 use serde::Deserialize;
 use std::path::Path;
 
-/// The client configuration for the `evmosd` node.
-#[derive(Clone, Deserialize)]
+/// The client configuration for the used node binary.
+///
+/// TODO: check if this can be removed
+#[derive(Clone, Default, Deserialize)]
 pub struct ClientConfig {
     #[serde(rename = "chain-id")]
     pub chain_id: String,
@@ -15,7 +17,7 @@ pub struct ClientConfig {
     pub broadcast_mode: String,
 }
 
-/// This method returns the client configuration for the `evmosd` node.
+/// This method returns the client configuration for the used node binary.
 pub fn get_client_config(path: &Path) -> Result<ClientConfig, ConfigError> {
     Ok(toml::from_str::<ClientConfig>(
         std::fs::read_to_string(path)?.as_str(),
