@@ -80,7 +80,7 @@ mod tests {
     #[tokio::test]
     async fn test_prepare_command() {
         let nc = NetworkConfig::default();
-        let uc = UpgradeConfig{
+        let uc = UpgradeConfig {
             previous_version: "v13.0.0".to_string(),
             target_version: "v14.0.0".to_string(),
             upgrade_time: Utc::now(),

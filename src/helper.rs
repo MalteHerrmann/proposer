@@ -114,9 +114,11 @@ pub fn get_helper_from_json(path: &Path) -> Result<UpgradeHelper, HelperError> {
 }
 
 /// Creates a new instance of the upgrade helper based on querying the user for the necessary input.
+///
+/// TODO: this is currently doing too much, the summary etc. should be optional and not hardwired.
 pub async fn get_helper_from_inputs(model: OpenAIModel) -> Result<UpgradeHelper, InputError> {
     // Query and check the network to use
-    let mut network_config = inputs::get_network_config(&config::get_evmos_config())?;
+    let mut network_config = inputs::get_network_config(config::get_available_configs())?;
 
     // Query and check the version to upgrade from
     let previous_version = inputs::get_text("Previous version to upgrade from:")?;
@@ -145,7 +147,7 @@ pub async fn get_helper_from_inputs(model: OpenAIModel) -> Result<UpgradeHelper,
     let release = get_release(get_instance().as_ref(), target_version.as_str()).await?;
     let summary = create_summary(&release, model).await?;
 
-    // Get the used home directory for the Evmos binary.
+    // Get the used home directory for the used binary.
     let evmosd_home = inputs::get_node_home(&network_config)?;
     network_config.path = evmosd_home;
 
@@ -184,7 +186,10 @@ mod helper_tests {
             },
         );
 
-        assert_eq!(helper.upgrade_config.previous_version, "v14.0.0".to_string());
+        assert_eq!(
+            helper.upgrade_config.previous_version,
+            "v14.0.0".to_string()
+        );
         assert_eq!(
             helper.upgrade_config.target_version,
             "v14.0.0-rc1".to_string()

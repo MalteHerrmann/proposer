@@ -75,12 +75,13 @@ pub async fn choose_commonwealth_link() -> Result<String, InputError> {
 }
 
 /// Prompts the user to select the network type used.
-pub fn get_network_config(cfg: &config::Config) -> Result<config::NetworkConfig, InputError> {
-    let network_options = cfg.networks.iter().map(|n| n.name.clone()).collect();
+pub fn get_network_config(
+    available_configs: Vec<NetworkConfig>,
+) -> Result<config::NetworkConfig, InputError> {
+    let network_options = available_configs.iter().map(|n| n.name.clone()).collect();
     let chosen_network = Select::new("Select network", network_options).prompt()?;
 
-    let used_config = cfg
-        .networks
+    let used_config = available_configs
         .iter()
         .find(|&n| n.name == chosen_network)
         .expect("expected to find chosen network name");
@@ -90,8 +91,6 @@ pub fn get_network_config(cfg: &config::Config) -> Result<config::NetworkConfig,
 
 /// Prompts the user to input the duration of the voting period.
 /// The duration is given in hours.
-///
-/// TODO: this method should be called in the setup of the helper.
 pub fn get_node_home(cfg: &NetworkConfig) -> Result<PathBuf, InputError> {
     let selected_option = inquire::Text::new("Enter the home path to your node keyring")
         .with_default(cfg.path.as_os_str().to_str().unwrap())

@@ -4,7 +4,7 @@ use regex::Regex;
 /// Returns a boolean value if the defined version fulfills the semantic
 /// versioning requirements.
 pub fn is_valid_version(version: &str) -> bool {
-    Regex::new(r"^v\d+\.\d+\.\d+(-rc\d+)*$")
+    Regex::new(r"^v\d+\.\d+\.\d+(-rc\.\d+)*$")
         .unwrap()
         .is_match(version)
 }
@@ -12,11 +12,13 @@ pub fn is_valid_version(version: &str) -> bool {
 /// Returns a boolean value if the defined target version fits
 /// the requirements for the selected network type.
 /// The target version must be in the format `vX.Y.Z`.
-/// Testnet upgrades must use a release candidate with the suffix `-rcX`.
+///
+/// Depending on the used network configuration, a release candidate suffix (e.g. -rc.0)
+/// either fine or invalid.
 pub fn is_valid_version_for_network(cfg: &NetworkConfig, target_version: &str) -> bool {
-    let mut pattern = r"^v\d+\.\d{1}\.\d+".to_string();
+    let mut pattern = r"^v\d+\.\d+\.\d+".to_string();
     if cfg.allow_rc {
-        pattern.push_str(r"(-rc\d+)*");
+        pattern.push_str(r"(-rc\.\d+)*");
     }
     pattern.push('$');
 
@@ -32,7 +34,7 @@ mod tests {
     #[test]
     fn test_is_valid_version_pass() {
         assert!(is_valid_version("v14.0.0"));
-        assert!(is_valid_version("v14.0.0-rc1"));
+        assert!(is_valid_version("v14.0.0-rc.1"));
     }
 
     #[test]
@@ -61,7 +63,7 @@ mod tests {
             allow_rc: true,
             ..NetworkConfig::default()
         };
-        assert!(is_valid_version_for_network(&cfg, "v14.0.0-rc1",));
+        assert!(is_valid_version_for_network(&cfg, "v14.0.0-rc.1",));
     }
 
     #[test]
@@ -84,7 +86,7 @@ mod tests {
     fn test_is_valid_target_version_mainnet_fail() {
         assert!(!is_valid_version_for_network(
             &NetworkConfig::default(),
-            "v14.0.0-rc1",
+            "v14.0.0-rc.1",
         ));
     }
 }

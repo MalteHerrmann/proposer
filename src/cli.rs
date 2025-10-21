@@ -50,6 +50,9 @@ pub struct GenerateCommandArgs {
 }
 
 /// Runs the logic for the `generate-command` sub-command.
+///
+/// TODO: this should be updated to use the new Cosmos SDK v50 based approach of the
+/// `MsgSoftwareUpgrade` from the `x/upgrade` module.
 pub async fn generate_command(args: GenerateCommandArgs) -> Result<(), CommandError> {
     let helper_config_path = match args.config {
         Some(config_file_name) => config_file_name,

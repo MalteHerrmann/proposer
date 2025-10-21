@@ -7,7 +7,7 @@ use serde_json::json;
 
 /// Renders the proposal template, filling in the necessary information.
 ///
-/// TODO: remember for now
+/// TODO: this can be removed or moved to another tool / maybe a plugin type thing
 pub fn render_proposal(helper: &UpgradeHelper) -> Result<String, ProposalError> {
     let mut handlebars = Handlebars::new();
     handlebars.set_strict_mode(true);
