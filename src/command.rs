@@ -1,5 +1,5 @@
+use crate::appd::ClientConfig;
 use crate::errors::PrepareError;
-use crate::evmosd::ClientConfig;
 use crate::helper::UpgradeHelper;
 use crate::release::{get_asset_string, get_instance, get_release};
 use handlebars::{no_escape, Handlebars};
@@ -48,6 +48,7 @@ pub async fn prepare_command(
 
     let data = json!({
         "assets": assets,
+        "bin": helper.network_config.binary,
         "chain_id": helper.network_config.chain_id,
         "commonwealth": helper.commonwealth_link,
         "description": description.replace('\n', "\\n"),  // NOTE: this is necessary to not print the actual new lines when rendering the template.

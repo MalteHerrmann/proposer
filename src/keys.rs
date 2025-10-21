@@ -1,4 +1,4 @@
-use crate::evmosd::ClientConfig;
+use crate::appd::ClientConfig;
 use crate::{balance, config::NetworkConfig, errors::KeysError};
 use serde::{Deserialize, Serialize};
 use std::process;
@@ -25,7 +25,7 @@ fn get_keys_from_keyring(
     client_config: &ClientConfig,
     network_config: &NetworkConfig,
 ) -> Result<Vec<Key>, KeysError> {
-    let output = process::Command::new("evmosd")
+    let output = process::Command::new(&network_config.binary)
         .args([
             "keys",
             "list",

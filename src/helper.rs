@@ -1,8 +1,9 @@
 use crate::{
+    appd,
     block::{get_estimated_height, round_to_nearest_500},
     config,
     errors::{HelperError, InputError, ValidationError},
-    evmosd, inputs,
+    inputs,
     llm::{create_summary, OpenAIModel},
     release::{get_instance, get_release},
     version,
@@ -83,7 +84,7 @@ impl UpgradeHelper {
         }
 
         // Check if the home folder contains the client configuration
-        evmosd::get_client_config(&self.network_config.path.join("config/client.toml"))?;
+        appd::get_client_config(&self.network_config.path.join("config/client.toml"))?;
 
         Ok(())
     }
@@ -148,8 +149,8 @@ pub async fn get_helper_from_inputs(model: OpenAIModel) -> Result<UpgradeHelper,
     let summary = create_summary(&release, model).await?;
 
     // Get the used home directory for the used binary.
-    let evmosd_home = inputs::get_node_home(&network_config)?;
-    network_config.path = evmosd_home;
+    let node_home = inputs::get_node_home(&network_config)?;
+    network_config.path = node_home;
 
     // Create an instance of the helper
     Ok(UpgradeHelper::new(

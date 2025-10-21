@@ -1,10 +1,10 @@
+mod appd;
 mod balance;
 mod block;
 mod cli;
 mod command;
 mod config;
 mod errors;
-mod evmosd;
 mod helper;
 mod http;
 mod inputs;

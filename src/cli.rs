@@ -1,4 +1,4 @@
-use crate::evmosd::get_client_config;
+use crate::appd::get_client_config;
 use crate::{
     command,
     errors::{CommandError, ProposalError},
